@@ -13,6 +13,7 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<RaycastHitComponent>();
             state.RequireForUpdate<CollisionFilterComponent>();
             state.RequireForUpdate<InputDataComponent>();
@@ -25,23 +26,21 @@ namespace Systems
             var input = SystemAPI.GetSingleton<InputDataComponent>();
 
             var collisionFilter = SystemAPI.GetSingleton<CollisionFilterComponent>();
-            
+
             var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
-            
-            var ecb = new EntityCommandBuffer(Allocator.TempJob);
+
+            var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
+            var ecb =  ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
             RaycastFloor(input, collisionFilter, physicsWorld, ecb);
             RaycastSphere(input, collisionFilter, physicsWorld, ecb);
-            
-            ecb.Playback(state.EntityManager);
-            ecb.Dispose();
         }
 
         private void RaycastFloor(InputDataComponent input, CollisionFilterComponent collisionFilter,
             PhysicsWorldSingleton physicsWorld, EntityCommandBuffer ecb)
         {
-            if(!input.isMouseDown) return;
-            
+            if (!input.isMouseDown) return;
+
             var raycastInput = new RaycastInput
             {
                 Start = input.ray.origin,
@@ -56,17 +55,17 @@ namespace Systems
 
             if (physicsWorld.CastRay(raycastInput, out var hit))
             {
-                var entity= SystemAPI.GetSingletonEntity<RaycastHitComponent>();
+                var entity = SystemAPI.GetSingletonEntity<RaycastHitComponent>();
                 var hitWithoutY = hit.Position;
                 hitWithoutY.y = 0;
-                Debug.Log(hitWithoutY);
+
                 ecb.SetComponent(entity, new RaycastHitComponent()
                 {
                     position = hitWithoutY
                 });
             }
         }
-        
+
         private void RaycastSphere(InputDataComponent input, CollisionFilterComponent collisionFilter,
             PhysicsWorldSingleton physicsWorld, EntityCommandBuffer ecb)
         {
