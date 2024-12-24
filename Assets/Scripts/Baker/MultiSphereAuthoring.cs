@@ -7,9 +7,8 @@ namespace Baker
     public class MultiSphereAuthoring : MonoBehaviour
     {
         public byte countElements;
+        public GameObject prefabSphere;
         public GameObject prefabElement;
-        public GameObject startSphere;
-        public GameObject endSphere;
         public float speedMoveSphere = 1f;
         public float speedGravityInSphere = 1f;
     }
@@ -21,14 +20,12 @@ namespace Baker
             var entity = GetEntity(TransformUsageFlags.None);
             var multiSphere = new MultiSphereComponent();
             multiSphere.countElements = authoring.countElements;
+            multiSphere.prefabSphere = GetEntity(authoring.prefabSphere, TransformUsageFlags.Dynamic);
             multiSphere.prefabElement = GetEntity(authoring.prefabElement, TransformUsageFlags.Dynamic);
-            multiSphere.startSphere = GetEntity(authoring.startSphere, TransformUsageFlags.Dynamic);
-            multiSphere.endSphere = GetEntity(authoring.endSphere, TransformUsageFlags.Dynamic);
             multiSphere.speedMoveSphere = authoring.speedMoveSphere;
             multiSphere.speedGravityInSphere = authoring.speedGravityInSphere;
             
             AddComponent(entity, multiSphere);
-            AddComponent(entity, new TagInitMultiSphere());
         }
     }
 }

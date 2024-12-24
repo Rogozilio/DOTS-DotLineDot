@@ -33,8 +33,7 @@ namespace Systems
             
             private void Execute(EnabledRefRW<IsMouseMove> mouseMove)
             {
-                if(!input.isMouseUp) return;
-                
+                if(!input.isLeftMouseUp && !input.isRightMouseUp) return;
                 mouseMove.ValueRW = false;
             }
         }

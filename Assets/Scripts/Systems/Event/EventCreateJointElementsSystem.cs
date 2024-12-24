@@ -5,6 +5,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Systems
 {
@@ -21,16 +22,24 @@ namespace Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var elements = SystemAPI.QueryBuilder().WithAll<ElementComponent>().Build();
-            var entityElements = elements.ToEntityArray(Allocator.TempJob);
-            
-            if(entityElements.Length <= 0) return;
-            
+            var elementsNotConnected = SystemAPI.QueryBuilder().WithAll<IsElementNotConnected>().Build();
+            var entityElementsNotConnected = elementsNotConnected.ToEntityArray(Allocator.TempJob);
+            Debug.Log(entityElementsNotConnected.Length);
+            if (entityElementsNotConnected.Length <= 0) return;
+
             var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-            var maxDistanceRange = SystemAPI.GetComponent<LocalTransform>(entityElements[0]).Scale / 1.5f;
+            var maxDistanceRange = SystemAPI.GetComponent<LocalTransform>(entityElementsNotConnected[0]).Scale / 1.5f;
             state.Dependency = new CreateConnectElementsJob
-                { ecb = ecb, elements = entityElements, maxDistanceRange = maxDistanceRange}.Schedule(state.Dependency);
+            {
+                ecb = ecb, 
+                elements = entityElementsNotConnected, 
+                maxDistanceRange = maxDistanceRange
+            }.Schedule(state.Dependency);
+            state.Dependency = new RemoveComponentIsElementNotConnectedJob()
+            {
+                ecb = ecb
+            }.Schedule(state.Dependency);
         }
 
         private partial struct CreateConnectElementsJob : IJobEntity
@@ -39,22 +48,29 @@ namespace Systems
             public NativeArray<Entity> elements;
             public float maxDistanceRange;
 
-            private void Execute(Entity entity, in MultiSphereComponent multiSphereComponent,
-                in TagInitConnectElements tag)
+            private void Execute(Entity entity, in ConnectSphere connectSphere)
             {
-                StaticMethod.CreateJoint(ecb, multiSphereComponent.startSphere, elements[0], maxDistanceRange);
+                StaticMethod.CreateJoint(ecb, entity, elements[0], maxDistanceRange);
 
                 for (var i = 0; i < elements.Length - 1; i++)
                 {
                     StaticMethod.CreateJoint(ecb, elements[i], elements[i + 1], maxDistanceRange);
                 }
 
-                StaticMethod.CreateJoint(ecb, elements[^1], multiSphereComponent.endSphere, maxDistanceRange);
+                StaticMethod.CreateJoint(ecb, elements[^1], connectSphere.target, maxDistanceRange);
 
-                ecb.RemoveComponent<TagInitConnectElements>(entity);
+                ecb.RemoveComponent<ConnectSphere>(entity);
             }
         }
+        
+        private partial struct RemoveComponentIsElementNotConnectedJob : IJobEntity
+        {
+            internal EntityCommandBuffer ecb;
 
-      
+            private void Execute(Entity entity, in IsElementNotConnected isElementNotConnected)
+            {
+                ecb.RemoveComponent<IsElementNotConnected>(entity);
+            }
+        }
     }
 }

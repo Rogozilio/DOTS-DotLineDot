@@ -2,7 +2,7 @@
 
 namespace Tags
 {
-    public struct TagInitMultiSphere : IComponentData
+    public struct IsElementNotConnected : IComponentData
     {
         
     }

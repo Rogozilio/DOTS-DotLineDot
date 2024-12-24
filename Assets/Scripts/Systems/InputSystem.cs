@@ -26,10 +26,12 @@ namespace Systems
             var entity = query.GetSingletonEntity();
             _entityManager.SetComponentData(entity, new InputDataComponent()
             {
-                isMouseClicked = Input.GetMouseButtonDown(0),
-                isMouseUp = Input.GetMouseButtonUp(0),
-                isMouseDown = Input.GetMouseButton(0),
-                mousePosition = Input.mousePosition,
+                isLeftMouseClicked = Input.GetMouseButtonDown(0),
+                isLeftMouseUp = Input.GetMouseButtonUp(0),
+                isLeftMouseDown = Input.GetMouseButton(0),
+                isRightMouseClicked = Input.GetMouseButtonDown(1),
+                isRightMouseUp = Input.GetMouseButtonUp(1),
+                isRightMouseDown = Input.GetMouseButton(1),
                 ray = _camera.ScreenPointToRay(Input.mousePosition)
             });
         }

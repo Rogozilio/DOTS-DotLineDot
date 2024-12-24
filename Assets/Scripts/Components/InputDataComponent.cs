@@ -6,10 +6,12 @@ namespace Components
 {
     public struct InputDataComponent : IComponentData
     {
-        public bool isMouseClicked;
-        public bool isMouseUp;
-        public bool isMouseDown;
-        public float3 mousePosition;
+        public bool isLeftMouseClicked;
+        public bool isLeftMouseUp;
+        public bool isLeftMouseDown;
+        public bool isRightMouseClicked;
+        public bool isRightMouseUp;
+        public bool isRightMouseDown;
         public Ray ray;
     }
 }

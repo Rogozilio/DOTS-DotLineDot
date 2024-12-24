@@ -30,7 +30,7 @@ namespace Systems
             var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
 
             var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
-            var ecb =  ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
             RaycastFloor(input, collisionFilter, physicsWorld, ecb);
             RaycastSphere(input, collisionFilter, physicsWorld, ecb);
@@ -39,7 +39,7 @@ namespace Systems
         private void RaycastFloor(InputDataComponent input, CollisionFilterComponent collisionFilter,
             PhysicsWorldSingleton physicsWorld, EntityCommandBuffer ecb)
         {
-            if (!input.isMouseDown) return;
+            if (!input.isLeftMouseDown && !input.isRightMouseDown) return;
 
             var raycastInput = new RaycastInput
             {
@@ -81,9 +81,17 @@ namespace Systems
                 }
             };
 
-            if (physicsWorld.CastRay(raycastInput, out var hit) && input.isMouseClicked)
+            if (!physicsWorld.CastRay(raycastInput, out var hit)) return;
+
+            if (input.isLeftMouseClicked)
             {
                 ecb.SetComponentEnabled<IsMouseMove>(hit.Entity, true);
+            }
+            else if (input.isRightMouseClicked)
+            {
+                var newSphere = ecb.Instantiate(hit.Entity);
+                ecb.SetComponentEnabled<IsMouseMove>(newSphere, true);
+                ecb.AddComponent(hit.Entity, new ConnectSphere { target = newSphere });
             }
         }
     }
