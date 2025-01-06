@@ -42,7 +42,7 @@ namespace Systems
             public float speed;
 
             private void Execute(Entity entity, ref PhysicsVelocity velocity, 
-                ref TargetGravityComponent targetGravity, in LocalToWorld localToWorld)
+                in TargetGravityComponent targetGravity, in LocalToWorld localToWorld)
             {
                 velocity.Linear = math.normalizesafe(targetGravity.position - localToWorld.Position) * speed;
                 ecb.SetComponentEnabled<TargetGravityComponent>(entity, false);

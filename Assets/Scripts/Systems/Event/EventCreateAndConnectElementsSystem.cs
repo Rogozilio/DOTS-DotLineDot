@@ -13,16 +13,12 @@ namespace Systems
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     public partial struct EventCreateAndConnectElementsSystem : ISystem
     {
-        private ComponentLookup<LocalTransform> _localTransforms;
-
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<ConnectSphere>();
             state.RequireForUpdate<MultiSphereComponent>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
-
-            _localTransforms = state.GetComponentLookup<LocalTransform>(true);
         }
 
         [BurstCompile]
@@ -34,20 +30,18 @@ namespace Systems
             var elementsNotConnected = SystemAPI.QueryBuilder().WithAll<IsElementNotConnected>().Build();
             var entityElementsNotConnected = elementsNotConnected.ToEntityArray(Allocator.TempJob);
 
-            _localTransforms.Update(ref state);
-
             state.Dependency = new CreateElementsJob
             {
                 ecb = ecb,
                 levelSettings = levelSettings,
-                localTransforms = _localTransforms
+                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
             }.Schedule(state.Dependency);
 
             state.Dependency = new CreateJointElementsJob
             {
                 ecb = ecb,
                 elements = entityElementsNotConnected,
-                localTransforms = _localTransforms
+                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
             }.Schedule(state.Dependency);
             state.Dependency.Complete();
             state.Dependency = new RemoveComponentIsElementNotConnectedJob()

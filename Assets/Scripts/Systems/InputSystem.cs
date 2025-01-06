@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Systems
 {
-    public partial class InputSystem : MonoBehaviour
+    public class InputSystem : MonoBehaviour
     {
         private EntityManager _entityManager;
 

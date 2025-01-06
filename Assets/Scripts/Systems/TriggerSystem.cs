@@ -14,19 +14,11 @@ namespace Systems
     [UpdateBefore(typeof(GravityInSphereSystem))]
     public partial struct TriggerSystem : ISystem
     {
-        private ComponentLookup<TagSphere> _lookupSphere;
-        private ComponentLookup<TargetGravityComponent> _lookupElement;
-        private ComponentLookup<LocalToWorld> _lookupLocalToWorld;
-
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<SimulationSingleton>();
-
-            _lookupSphere = state.GetComponentLookup<TagSphere>(true);
-            _lookupElement = state.GetComponentLookup<TargetGravityComponent>();
-            _lookupLocalToWorld = state.GetComponentLookup<LocalToWorld>(true);
+            state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
@@ -35,17 +27,13 @@ namespace Systems
             var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-            _lookupSphere.Update(ref state);
-            _lookupElement.Update(ref state);
-            _lookupLocalToWorld.Update(ref state);
-
             var simulationSingleton = SystemAPI.GetSingleton<SimulationSingleton>();
             state.Dependency = new TriggerEvent
             {
                 ecb = ecb,
-                sphereComponent = _lookupSphere,
-                targetGravityComponent = _lookupElement,
-                localToWorld = _lookupLocalToWorld
+                sphereComponent = SystemAPI.GetComponentLookup<TagSphere>(true),
+                targetGravityComponent = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
+                localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true)
             }.Schedule(simulationSingleton, state.Dependency);
         }
 
