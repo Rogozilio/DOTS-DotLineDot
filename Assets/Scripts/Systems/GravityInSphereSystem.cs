@@ -44,7 +44,7 @@ namespace Systems
             private void Execute(Entity entity, ref PhysicsVelocity velocity, 
                 ref TargetGravityComponent targetGravity, in LocalToWorld localToWorld)
             {
-                velocity.Linear = math.normalize(targetGravity.position - localToWorld.Position) * speed;
+                velocity.Linear = math.normalizesafe(targetGravity.position - localToWorld.Position) * speed;
                 ecb.SetComponentEnabled<TargetGravityComponent>(entity, false);
             }
         }

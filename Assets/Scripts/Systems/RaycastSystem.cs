@@ -5,11 +5,13 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
+using Unity.Transforms;
 using UnityEngine;
+using RaycastHit = Unity.Physics.RaycastHit;
 
 namespace Systems
 {
-    public partial struct Raycast : ISystem
+    public partial struct RaycastSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
         {
@@ -32,28 +34,11 @@ namespace Systems
             var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-            RaycastFloor(input, collisionFilter, physicsWorld, ecb);
-            RaycastSphere(input, collisionFilter, physicsWorld, ecb);
-        }
-
-        private void RaycastFloor(InputDataComponent input, CollisionFilterComponent collisionFilter,
-            PhysicsWorldSingleton physicsWorld, EntityCommandBuffer ecb)
-        {
+            RaycastHit hit;
+            
             if (!input.isLeftMouseDown && !input.isRightMouseDown) return;
-
-            var raycastInput = new RaycastInput
-            {
-                Start = input.ray.origin,
-                End = (float3)input.ray.origin + math.normalize(input.ray.direction) * 100f,
-                Filter = new CollisionFilter
-                {
-                    BelongsTo = collisionFilter.collisionFilterFloor.BelongsTo,
-                    CollidesWith = collisionFilter.collisionFilterFloor.CollidesWith,
-                    GroupIndex = 0
-                }
-            };
-
-            if (physicsWorld.CastRay(raycastInput, out var hit))
+            
+            if (Raycast(input, collisionFilter.collisionFilterFloor, physicsWorld, out hit))
             {
                 var entity = SystemAPI.GetSingletonEntity<RaycastHitComponent>();
                 var hitWithoutY = hit.Position;
@@ -64,10 +49,24 @@ namespace Systems
                     position = hitWithoutY
                 });
             }
+            
+            if (Raycast(input, collisionFilter.collisionFilterSphere, physicsWorld, out hit))
+            {
+                if (input.isLeftMouseClicked)
+                {
+                    ecb.SetComponentEnabled<IsMouseMove>(hit.Entity, true);
+                }
+                else if (input.isRightMouseClicked)
+                {
+                    var newSphere = ecb.Instantiate(hit.Entity);
+                    ecb.SetComponentEnabled<IsMouseMove>(newSphere, true);
+                    ecb.AddComponent(hit.Entity, new ConnectSphere { target = newSphere });
+                }
+            }
         }
 
-        private void RaycastSphere(InputDataComponent input, CollisionFilterComponent collisionFilter,
-            PhysicsWorldSingleton physicsWorld, EntityCommandBuffer ecb)
+        private bool Raycast(InputDataComponent input, CollisionFilter collisionFilter,
+            PhysicsWorldSingleton physicsWorld, out RaycastHit hit)
         {
             var raycastInput = new RaycastInput
             {
@@ -75,24 +74,13 @@ namespace Systems
                 End = (float3)input.ray.origin + math.normalize(input.ray.direction) * 100f,
                 Filter = new CollisionFilter
                 {
-                    BelongsTo = collisionFilter.collisionFilterSphere.BelongsTo,
-                    CollidesWith = collisionFilter.collisionFilterSphere.CollidesWith,
+                    BelongsTo = collisionFilter.BelongsTo,
+                    CollidesWith = collisionFilter.CollidesWith,
                     GroupIndex = 0
                 }
             };
 
-            if (!physicsWorld.CastRay(raycastInput, out var hit)) return;
-
-            if (input.isLeftMouseClicked)
-            {
-                ecb.SetComponentEnabled<IsMouseMove>(hit.Entity, true);
-            }
-            else if (input.isRightMouseClicked)
-            {
-                var newSphere = ecb.Instantiate(hit.Entity);
-                ecb.SetComponentEnabled<IsMouseMove>(newSphere, true);
-                ecb.AddComponent(hit.Entity, new ConnectSphere { target = newSphere });
-            }
+            return physicsWorld.CastRay(raycastInput, out hit);
         }
     }
 }

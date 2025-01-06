@@ -14,6 +14,7 @@ namespace Systems
     public partial struct EventCreateAndConnectElementsSystem : ISystem
     {
         private ComponentLookup<LocalTransform> _localTransforms;
+
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
@@ -32,15 +33,16 @@ namespace Systems
             var levelSettings = SystemAPI.GetSingleton<MultiSphereComponent>();
             var elementsNotConnected = SystemAPI.QueryBuilder().WithAll<IsElementNotConnected>().Build();
             var entityElementsNotConnected = elementsNotConnected.ToEntityArray(Allocator.TempJob);
-            
+
             _localTransforms.Update(ref state);
-            
+
             state.Dependency = new CreateElementsJob
             {
                 ecb = ecb,
-                levelSettings = levelSettings
+                levelSettings = levelSettings,
+                localTransforms = _localTransforms
             }.Schedule(state.Dependency);
-         
+
             state.Dependency = new CreateJointElementsJob
             {
                 ecb = ecb,
@@ -52,7 +54,7 @@ namespace Systems
             {
                 ecb = ecb.AsParallelWriter()
             }.ScheduleParallel(state.Dependency);
-            
+
             entityElementsNotConnected.Dispose();
         }
 
@@ -61,7 +63,8 @@ namespace Systems
         {
             internal EntityCommandBuffer ecb;
             public MultiSphereComponent levelSettings;
-            
+            [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
+
             private void Execute(Entity entity, in ConnectSphere connectSphere)
             {
                 for (byte i = 0; i < levelSettings.countElements; i++)
@@ -72,7 +75,14 @@ namespace Systems
                     {
                         id = i
                     });
+                    ecb.SetComponent(newElement, new LocalTransform()
+                    {
+                        Position = localTransforms[entity].Position,
+                        Rotation = localTransforms[levelSettings.prefabElement].Rotation,
+                        Scale = localTransforms[levelSettings.prefabElement].Scale
+                    });
                 }
+
                 ecb.AddComponent<TagElementsCreated>(entity);
             }
         }
@@ -81,7 +91,7 @@ namespace Systems
         {
             internal EntityCommandBuffer ecb;
             public NativeArray<Entity> elements;
-            [ReadOnly] public ComponentLookup<LocalTransform> localTransforms; 
+            [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
 
             private void Execute(Entity entity, in ConnectSphere connectSphere)
             {
@@ -107,7 +117,8 @@ namespace Systems
         {
             internal EntityCommandBuffer.ParallelWriter ecb;
 
-            private void Execute(Entity entity, [ChunkIndexInQuery] int sortKey, in IsElementNotConnected isElementNotConnected)
+            private void Execute(Entity entity, [ChunkIndexInQuery] int sortKey,
+                in IsElementNotConnected isElementNotConnected)
             {
                 ecb.RemoveComponent<IsElementNotConnected>(sortKey, entity);
             }
