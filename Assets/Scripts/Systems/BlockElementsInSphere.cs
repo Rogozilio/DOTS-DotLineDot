@@ -1,4 +1,5 @@
-﻿using Components;
+﻿using Aspects;
+using Components;
 using Components.DynamicBuffers;
 using Static;
 using Unity.Burst;
@@ -17,7 +18,7 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
+            state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             state.Enabled = false;
         }
 
@@ -26,10 +27,10 @@ namespace Systems
         {
             var buffer = SystemAPI.GetSingletonBuffer<BlockElementBufferComponent>();
 
-            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
+            var ecb = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var count = SystemAPI.QueryBuilder().WithDisabled<TargetGravityComponent>().Build().CalculateEntityCount();
             Debug.Log(count);
-            if (count >= 5 && buffer.Length == 0)
+            if (count >= 10 && buffer.Length == 0)
             {
                 state.Dependency = new CreateJointForDisabledTargetGravity
                 {
@@ -45,11 +46,10 @@ namespace Systems
             internal EntityCommandBuffer.ParallelWriter ecb;
             public DynamicBuffer<BlockElementBufferComponent> buffer;
 
-            private void Execute(Entity entity, [ChunkIndexInQuery] int sortKey,
-                in TargetGravityComponent targetGravityComponent, in LocalToWorld local)
+            private void Execute(Entity entity, [ChunkIndexInQuery] int sortKey, ElementAspect element)
             {
-                var distance = math.distance(local.Position, targetGravityComponent.position);
-                var e = StaticMethod.CreateJoint(ecb, sortKey, entity, targetGravityComponent.target, distance, "asd");
+                var e = StaticMethod.CreateJoint(ecb, sortKey, entity, element.TargetGravity.target,
+                    element.DistanceToTargetGravity, "JointNew");
                 buffer.Add(new BlockElementBufferComponent { element = e });
             }
         }

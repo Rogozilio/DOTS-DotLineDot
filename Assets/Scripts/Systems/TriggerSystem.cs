@@ -24,13 +24,9 @@ namespace Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
-            var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-
             var simulationSingleton = SystemAPI.GetSingleton<SimulationSingleton>();
             state.Dependency = new TriggerEvent
             {
-                ecb = ecb,
                 sphereComponent = SystemAPI.GetComponentLookup<TagSphere>(true),
                 targetGravityComponent = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
                 localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true)
@@ -40,11 +36,9 @@ namespace Systems
         [BurstCompile]
         struct TriggerEvent : ITriggerEventsJob
         {
-            internal EntityCommandBuffer ecb;
             [ReadOnly] public ComponentLookup<TagSphere> sphereComponent;
             public ComponentLookup<TargetGravityComponent> targetGravityComponent;
             [ReadOnly] public ComponentLookup<LocalToWorld> localToWorld;
-
             public void Execute(Unity.Physics.TriggerEvent triggerEvent)
             {
                 Entity sphere = Entity.Null;
@@ -65,7 +59,7 @@ namespace Systems
                 var newTarget = new TargetGravityComponent
                     { target = sphere, position = localToWorld[sphere].Position };
                 targetGravityComponent[element] = newTarget;
-                ecb.SetComponentEnabled<TargetGravityComponent>(element, true);
+                targetGravityComponent.SetComponentEnabled(element, true);
             }
         }
     }

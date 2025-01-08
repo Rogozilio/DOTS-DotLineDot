@@ -1,4 +1,5 @@
-﻿using Components;
+﻿using Aspects;
+using Components;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -18,19 +19,15 @@ namespace Systems
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<MultiSphereComponent>();
-            state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
-
             var data = SystemAPI.GetSingleton<MultiSphereComponent>();
 
             state.Dependency = new GravityInSphereJob
             {
-                ecb = ecb.CreateCommandBuffer(state.WorldUnmanaged),
                 speed = data.speedGravityInSphere
             }.Schedule(state.Dependency);
         }
@@ -38,14 +35,12 @@ namespace Systems
         [BurstCompile]
         private partial struct GravityInSphereJob : IJobEntity
         {
-            internal EntityCommandBuffer ecb;
             public float speed;
 
-            private void Execute(Entity entity, ref PhysicsVelocity velocity, 
-                in TargetGravityComponent targetGravity, in LocalToWorld localToWorld)
+            private void Execute(ElementAspect element)
             {
-                velocity.Linear = math.normalizesafe(targetGravity.position - localToWorld.Position) * speed;
-                ecb.SetComponentEnabled<TargetGravityComponent>(entity, false);
+                element.LinearVelocity = element.ToTargetGravity * speed;
+                element.EnableTargetGravity = false;
             }
         }
     }
