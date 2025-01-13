@@ -15,7 +15,7 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
+            state.RequireForUpdate<BeginFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             state.RequireForUpdate<RaycastHitComponent>();
             state.RequireForUpdate<CollisionFilterComponent>();
             state.RequireForUpdate<InputDataComponent>();
@@ -31,7 +31,7 @@ namespace Systems
 
             var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();
 
-            var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
+            var ecbSingleton = SystemAPI.GetSingleton<BeginFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
             RaycastHit hit;
@@ -58,9 +58,7 @@ namespace Systems
                 }
                 else if (input.isRightMouseClicked)
                 {
-                    var newSphere = ecb.Instantiate(hit.Entity);
-                    ecb.SetComponentEnabled<IsMouseMove>(newSphere, true);
-                    ecb.AddComponent(hit.Entity, new ConnectSphere { target = newSphere });
+                    ecb.AddComponent<TagCreateSphere>(hit.Entity);
                 }
             }
         }

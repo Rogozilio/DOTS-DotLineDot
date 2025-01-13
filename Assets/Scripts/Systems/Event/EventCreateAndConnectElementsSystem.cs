@@ -11,6 +11,7 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateAfter(typeof(EventCreateSphereSystem))]
     public partial struct EventCreateAndConnectElementsSystem : ISystem
     {
         [BurstCompile]
@@ -36,7 +37,11 @@ namespace Systems
                 levelSettings = levelSettings,
                 localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
             }.Schedule(state.Dependency);
-
+            if (entityElementsNotConnected.Length == 0)
+            {
+                entityElementsNotConnected.Dispose();
+                return;
+            }
             state.Dependency = new CreateJointElementsJob
             {
                 ecb = ecb,
@@ -44,6 +49,7 @@ namespace Systems
                 localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
             }.Schedule(state.Dependency);
             state.Dependency.Complete();
+            state.Dependency = new IncrementIndexConnectionJob().Schedule(state.Dependency);
             state.Dependency = new RemoveComponentIsElementNotConnectedJob()
             {
                 ecb = ecb.AsParallelWriter()
@@ -64,10 +70,10 @@ namespace Systems
                 for (byte i = 0; i < levelSettings.countElements; i++)
                 {
                     var newElement = ecb.Instantiate(levelSettings.prefabElement);
-                    ecb.SetName(newElement, "Element " + i);
-                    ecb.SetComponent(newElement, new ElementComponent()
+                    ecb.SetName(newElement, "Element " + levelSettings.indexConnection + " (" + i + ")");
+                    ecb.SetComponent(newElement, new IndexConnectComponent()
                     {
-                        id = i
+                        value = levelSettings.indexConnection
                     });
                     ecb.SetComponent(newElement, new LocalTransform()
                     {
@@ -89,7 +95,7 @@ namespace Systems
 
             private void Execute(Entity entity, in ConnectSphere connectSphere)
             {
-                if (elements.Length == 0) return;
+                
 
                 var maxDistance = localTransforms[elements[0]].Scale / 1.5f;
 
@@ -104,6 +110,15 @@ namespace Systems
 
                 ecb.RemoveComponent<ConnectSphere>(entity);
                 ecb.RemoveComponent<TagElementsCreated>(entity);
+            }
+            
+        }
+        
+        private partial struct IncrementIndexConnectionJob : IJobEntity
+        {
+            private void Execute(ref MultiSphereComponent levelSettings)
+            {
+                levelSettings.indexConnection++;
             }
         }
 

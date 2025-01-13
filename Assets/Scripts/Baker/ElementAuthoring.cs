@@ -13,10 +13,10 @@ namespace Baker
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 
-                AddComponent<ElementComponent>(entity);
+                AddComponent<IndexConnectComponent>(entity);
                 AddComponent<IsElementNotConnected>(entity);
                 AddComponent<TargetGravityComponent>(entity);
-                SetComponentEnabled<TargetGravityComponent>(entity,false);
+                SetComponentEnabled<TargetGravityComponent>(entity,true);
             }
         }
     }

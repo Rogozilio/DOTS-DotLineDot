@@ -11,7 +11,7 @@ namespace Baker
             public override void Bake(DynamicBufferAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.None);
-                AddBuffer<BlockElementBufferComponent>(entity);
+                AddBuffer<BlockElementBuffer>(entity);
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Components;
+using Components.DynamicBuffers;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -10,8 +11,7 @@ using UnityEngine;
 
 namespace Systems
 {
-    [UpdateInGroup(typeof(BeforePhysicsSystemGroup))]
-    [UpdateBefore(typeof(GravityInSphereSystem))]
+    [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
     public partial struct TriggerSystem : ISystem
     {
         [BurstCompile]
@@ -29,7 +29,9 @@ namespace Systems
             {
                 sphereComponent = SystemAPI.GetComponentLookup<TagSphere>(true),
                 targetGravityComponent = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
-                localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true)
+                localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true),
+                indexesBuffer = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
+                indexesElement = SystemAPI.GetComponentLookup<IndexConnectComponent>(true)
             }.Schedule(simulationSingleton, state.Dependency);
         }
 
@@ -39,11 +41,15 @@ namespace Systems
             [ReadOnly] public ComponentLookup<TagSphere> sphereComponent;
             public ComponentLookup<TargetGravityComponent> targetGravityComponent;
             [ReadOnly] public ComponentLookup<LocalToWorld> localToWorld;
+            
+            [ReadOnly] public BufferLookup<IndexConnectionBuffer> indexesBuffer;
+            [ReadOnly] public ComponentLookup<IndexConnectComponent> indexesElement;
+            
             public void Execute(Unity.Physics.TriggerEvent triggerEvent)
             {
                 Entity sphere = Entity.Null;
                 Entity element = Entity.Null;
-
+             
                 if (sphereComponent.HasComponent(triggerEvent.EntityA))
                     sphere = triggerEvent.EntityA;
                 if (sphereComponent.HasComponent(triggerEvent.EntityB))
@@ -56,6 +62,19 @@ namespace Systems
                 if (Entity.Null.Equals(sphere) || Entity.Null.Equals(element))
                     return;
 
+                var isEqualsIndex = false;
+                
+                for (var i = 0; i < indexesBuffer[sphere].Length; i++)
+                {
+                    if (indexesBuffer[sphere][i].value == indexesElement[element].value)
+                    {
+                        isEqualsIndex = true;
+                        break;
+                    }
+                }
+                
+                if(!isEqualsIndex) return;
+                
                 var newTarget = new TargetGravityComponent
                     { target = sphere, position = localToWorld[sphere].Position };
                 targetGravityComponent[element] = newTarget;

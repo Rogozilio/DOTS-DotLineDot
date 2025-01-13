@@ -1,5 +1,6 @@
 ﻿using Aspects;
 using Components;
+using Components.DynamicBuffers;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -12,8 +13,7 @@ using UnityEngine;
 
 namespace Systems
 {
-    [UpdateInGroup(typeof(BeforePhysicsSystemGroup))]
-    [UpdateAfter(typeof(MoveMouseSphereSystem))]
+    [UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
     public partial struct GravityInSphereSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -28,7 +28,8 @@ namespace Systems
 
             state.Dependency = new GravityInSphereJob
             {
-                speed = data.speedGravityInSphere
+                speed = data.speedGravityInSphere,
+                isMouseMoves = SystemAPI.GetComponentLookup<IsMouseMove>(true)
             }.Schedule(state.Dependency);
         }
 
@@ -36,9 +37,14 @@ namespace Systems
         private partial struct GravityInSphereJob : IJobEntity
         {
             public float speed;
+            [ReadOnly] public ComponentLookup<IsMouseMove> isMouseMoves;
 
             private void Execute(ElementAspect element)
             {
+                //TODO: Изменить притяжку к сфере, но позже     
+                if(element.TargetGravity.target == Entity.Null) return;
+                if(isMouseMoves.GetEnabledRefRO<IsMouseMove>(element.TargetGravity.target).ValueRO) return;
+                
                 element.LinearVelocity = element.ToTargetGravity * speed;
                 element.EnableTargetGravity = false;
             }

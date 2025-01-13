@@ -3,7 +3,7 @@
 namespace Components.DynamicBuffers
 {
     [InternalBufferCapacity(0)]
-    public struct BlockElementBufferComponent : IBufferElementData
+    public struct BlockElementBuffer : IBufferElementData
     {
         public Entity element;
     }

@@ -8,6 +8,9 @@ onBoardingDoNotAskAgain = true
 showPackageIndexes = false
 showStatusBar = false
 scopes = {
+	"last_search.7B5C2356" = "buffer"
+	"OpenInspectorPreview.7B5C2356" = "0"
+	"currentGroup.7B5C2356" = "all"
 }
 providers = {
 	journal = {
