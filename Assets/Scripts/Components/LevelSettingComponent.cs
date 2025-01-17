@@ -1,10 +1,11 @@
 ﻿using Unity.Entities;
 using UnityEngine;
 
-public struct MultiSphereComponent : IComponentData
+public struct LevelSettingComponent : IComponentData
 {
-    [HideInInspector]public byte indexConnection;
+    public byte indexConnection;
     public byte countElements;
+    public int countSphere;
     public Entity prefabSphere;
     public Entity prefabElement;
     public float speedMoveSphere;

@@ -1,4 +1,5 @@
 ﻿using Components;
+using SystemGroups;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -7,7 +8,7 @@ using UnityEngine;
 
 namespace Systems
 {
-   
+    [UpdateInGroup(typeof(DisableComponentsSystemGroup))]
     public partial struct DisableIsMouseMoveSystem : ISystem
     {
         public void OnCreate(ref SystemState state)

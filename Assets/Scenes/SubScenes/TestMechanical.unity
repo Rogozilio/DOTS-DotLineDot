@@ -629,6 +629,50 @@ MonoBehaviour:
         Tag07: 0
     m_SerializedVersion: 1
   m_SerializedVersion: 1
+--- !u!1 &1752581006
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1752581007}
+  - component: {fileID: 1752581008}
+  m_Layer: 0
+  m_Name: SpawnSphere
+  m_TagString: Untagged
+  m_Icon: {fileID: 6519382022992737161, guid: 0000000000000000d000000000000000, type: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1752581007
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1752581006}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.07, y: 0.77, z: 1.11}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1752581008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1752581006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab7ca57ef94345b79d85106bbd5a8133, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1841730820
 GameObject:
   m_ObjectHideFlags: 0
@@ -846,11 +890,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2248c4f9512745f7a5d2da82989423e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  countSphere: 32
+  speedMoveSphere: 1000
+  speedGravityInSphere: 5
   countElements: 20
   prefabSphere: {fileID: 2763660226201864276, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}
   prefabElement: {fileID: 1217494378842058816, guid: dbbc14ef6c512134191e82c86dfc2b6a, type: 3}
-  speedMoveSphere: 1000
-  speedGravityInSphere: 5
 --- !u!114 &1841730826
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -898,6 +943,14 @@ PrefabInstance:
     - target: {fileID: 2763660226201864276, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}
       propertyPath: m_Name
       value: Sphere
+      objectReference: {fileID: 0}
+    - target: {fileID: 2763660226201864276, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3138539647383948704, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}
+      propertyPath: countSphere
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 6356059156770239674, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}
       propertyPath: m_LocalPosition.x
@@ -950,5 +1003,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 1841730822}
   - {fileID: 6510405315170015798}
+  - {fileID: 1752581007}
   - {fileID: 694545449}
   - {fileID: 1046543701}

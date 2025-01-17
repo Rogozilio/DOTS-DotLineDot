@@ -15,7 +15,7 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<MultiSphereComponent>();
+            state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<InputDataComponent>();
             state.RequireForUpdate<RaycastHitComponent>();
         }
@@ -24,7 +24,7 @@ namespace Systems
         public void OnUpdate(ref SystemState state)
         {
             var raycastHit = SystemAPI.GetSingleton<RaycastHitComponent>();
-            var data = SystemAPI.GetSingleton<MultiSphereComponent>();
+            var data = SystemAPI.GetSingleton<LevelSettingComponent>();
             
             state.Dependency = new SphereFollowMouseJob
             {

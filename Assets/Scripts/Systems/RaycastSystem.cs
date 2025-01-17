@@ -11,6 +11,7 @@ using RaycastHit = Unity.Physics.RaycastHit;
 
 namespace Systems
 {
+    [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
     public partial struct RaycastSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -33,11 +34,12 @@ namespace Systems
 
             var ecbSingleton = SystemAPI.GetSingleton<BeginFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+            
+            if (!input.isLeftMouseDown && !input.isRightMouseDown) return;
 
             RaycastHit hit;
             
-            if (!input.isLeftMouseDown && !input.isRightMouseDown) return;
-            
+            //Floor
             if (Raycast(input, collisionFilter.collisionFilterFloor, physicsWorld, out hit))
             {
                 var entity = SystemAPI.GetSingletonEntity<RaycastHitComponent>();
@@ -50,15 +52,17 @@ namespace Systems
                 });
             }
             
+            //Sphere
             if (Raycast(input, collisionFilter.collisionFilterSphere, physicsWorld, out hit))
             {
+                
                 if (input.isLeftMouseClicked)
                 {
                     ecb.SetComponentEnabled<IsMouseMove>(hit.Entity, true);
                 }
                 else if (input.isRightMouseClicked)
                 {
-                    ecb.AddComponent<TagCreateSphere>(hit.Entity);
+                    ecb.AddComponent(hit.Entity, new SpawnSphereComponent{isAddConnectSphere = true});
                 }
             }
         }
@@ -79,6 +83,23 @@ namespace Systems
             };
 
             return physicsWorld.CastRay(raycastInput, out hit);
+        }
+        private bool Raycast(InputDataComponent input, CollisionFilter collisionFilter,
+            PhysicsWorldSingleton physicsWorld, ref NativeList<RaycastHit> hit)
+        {
+            var raycastInput = new RaycastInput
+            {
+                Start = input.ray.origin,
+                End = (float3)input.ray.origin + math.normalize(input.ray.direction) * 100f,
+                Filter = new CollisionFilter
+                {
+                    BelongsTo = collisionFilter.BelongsTo,
+                    CollidesWith = collisionFilter.CollidesWith,
+                    GroupIndex = 0
+                }
+            };
+
+            return physicsWorld.CastRay(raycastInput, ref hit);
         }
     }
 }

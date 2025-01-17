@@ -11,14 +11,13 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
-    [UpdateAfter(typeof(EventCreateSphereSystem))]
     public partial struct EventCreateAndConnectElementsSystem : ISystem
     {
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<ConnectSphere>();
-            state.RequireForUpdate<MultiSphereComponent>();
+            state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -27,7 +26,7 @@ namespace Systems
         {
             var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-            var levelSettings = SystemAPI.GetSingleton<MultiSphereComponent>();
+            var levelSettings = SystemAPI.GetSingleton<LevelSettingComponent>();
             var elementsNotConnected = SystemAPI.QueryBuilder().WithAll<IsElementNotConnected>().Build();
             var entityElementsNotConnected = elementsNotConnected.ToEntityArray(Allocator.TempJob);
 
@@ -62,7 +61,7 @@ namespace Systems
         private partial struct CreateElementsJob : IJobEntity
         {
             internal EntityCommandBuffer ecb;
-            public MultiSphereComponent levelSettings;
+            public LevelSettingComponent levelSettings;
             [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
 
             private void Execute(Entity entity, in ConnectSphere connectSphere)
@@ -116,7 +115,7 @@ namespace Systems
         
         private partial struct IncrementIndexConnectionJob : IJobEntity
         {
-            private void Execute(ref MultiSphereComponent levelSettings)
+            private void Execute(ref LevelSettingComponent levelSettings)
             {
                 levelSettings.indexConnection++;
             }

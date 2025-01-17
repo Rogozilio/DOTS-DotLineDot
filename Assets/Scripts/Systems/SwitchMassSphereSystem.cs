@@ -21,9 +21,10 @@ namespace Systems
     }
 
     [BurstCompile]
+    [WithAll(typeof(IsMouseMove))]
     partial struct DynamicMassSphereJob : IJobEntity
     {
-        private void Execute(ref PhysicsMass mass, in IsMouseMove isMouseMove)
+        private void Execute(ref PhysicsMass mass)
         {
             mass.InverseMass = 1f;
         }

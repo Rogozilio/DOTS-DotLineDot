@@ -18,13 +18,13 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
-            state.RequireForUpdate<MultiSphereComponent>();
+            state.RequireForUpdate<LevelSettingComponent>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var data = SystemAPI.GetSingleton<MultiSphereComponent>();
+            var data = SystemAPI.GetSingleton<LevelSettingComponent>();
 
             state.Dependency = new GravityInSphereJob
             {
