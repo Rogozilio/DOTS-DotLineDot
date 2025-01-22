@@ -9,7 +9,7 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(DisableComponentsSystemGroup))]
-    public partial struct DisableIsMouseMoveSystem : ISystem
+    public partial struct ClearIsMouseMoveSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
         {

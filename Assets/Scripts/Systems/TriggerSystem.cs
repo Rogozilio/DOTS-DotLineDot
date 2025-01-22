@@ -1,8 +1,10 @@
-﻿using Components;
+﻿using Aspects;
+using Components;
 using Components.DynamicBuffers;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Physics;
 using Unity.Physics.Systems;
@@ -18,7 +20,6 @@ namespace Systems
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<SimulationSingleton>();
-            state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
@@ -32,8 +33,7 @@ namespace Systems
                 localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true),
                 indexesBuffer = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
                 indexesElement = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
-                IsMouseMoves = SystemAPI.GetComponentLookup<IsMouseMove>(true),
-                IsMergeSpheres = SystemAPI.GetComponentLookup<IsMergeSphere>(),
+                isCollisionWithSpheres = SystemAPI.GetComponentLookup<IsCollisionWithSphere>(),
             }.Schedule(simulationSingleton, state.Dependency);
         }
 
@@ -43,13 +43,12 @@ namespace Systems
             [ReadOnly] public ComponentLookup<TagSphere> sphereComponent;
             public ComponentLookup<TargetGravityComponent> targetGravityComponent;
             [ReadOnly] public ComponentLookup<LocalToWorld> localToWorld;
-            
+
             [ReadOnly] public BufferLookup<IndexConnectionBuffer> indexesBuffer;
             [ReadOnly] public ComponentLookup<IndexConnectComponent> indexesElement;
 
-            [ReadOnly] public ComponentLookup<IsMouseMove> IsMouseMoves;
-            public ComponentLookup<IsMergeSphere> IsMergeSpheres;
-            
+            public ComponentLookup<IsCollisionWithSphere> isCollisionWithSpheres;
+
             public void Execute(Unity.Physics.TriggerEvent triggerEvent)
             {
                 CollisionSphereWithElement(triggerEvent);
@@ -60,7 +59,7 @@ namespace Systems
             {
                 var sphere = Entity.Null;
                 var element = Entity.Null;
-                
+
                 if (sphereComponent.HasComponent(triggerEvent.EntityA))
                     sphere = triggerEvent.EntityA;
                 if (sphereComponent.HasComponent(triggerEvent.EntityB))
@@ -72,9 +71,9 @@ namespace Systems
 
                 if (Entity.Null.Equals(sphere) || Entity.Null.Equals(element))
                     return;
-                
+
                 var isEqualsIndex = false;
-                
+
                 for (var i = 0; i < indexesBuffer[sphere].Length; i++)
                 {
                     if (indexesBuffer[sphere][i].value == indexesElement[element].value)
@@ -83,9 +82,9 @@ namespace Systems
                         break;
                     }
                 }
-                
-                if(!isEqualsIndex) return;
-                
+
+                if (!isEqualsIndex) return;
+
                 var newTarget = new TargetGravityComponent
                     { target = sphere, position = localToWorld[sphere].Position };
                 targetGravityComponent[element] = newTarget;
@@ -96,7 +95,7 @@ namespace Systems
             {
                 var sphere1 = Entity.Null;
                 var sphere2 = Entity.Null;
-                    
+
                 if (sphereComponent.HasComponent(triggerEvent.EntityA))
                     sphere1 = triggerEvent.EntityA;
                 if (sphereComponent.HasComponent(triggerEvent.EntityB))
@@ -104,11 +103,9 @@ namespace Systems
 
                 if (Entity.Null.Equals(sphere1) || Entity.Null.Equals(sphere2))
                     return;
-
-                if (IsMouseMoves.IsComponentEnabled(sphere1) && IsMouseMoves.IsComponentEnabled(sphere2))
-                {
-                    IsMergeSpheres.SetComponentEnabled(sphere1, true);
-                }
+                
+                isCollisionWithSpheres.SetComponentEnabled(sphere1, true);
+                isCollisionWithSpheres.SetComponentEnabled(sphere2, true);
             }
         }
     }

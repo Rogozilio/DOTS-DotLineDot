@@ -2,7 +2,7 @@
 
 namespace SystemGroups
 {
-    [UpdateInGroup(typeof(LateSimulationSystemGroup))]
+    [UpdateInGroup(typeof(LateSimulationSystemGroup), OrderFirst = true)]
     public partial class DisableComponentsSystemGroup : ComponentSystemGroup
     {
     

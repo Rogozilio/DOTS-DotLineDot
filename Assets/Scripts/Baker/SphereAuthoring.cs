@@ -16,10 +16,10 @@ namespace Baker
                 AddComponent<TagSphere>(entity);
                 AddBuffer<IndexConnectionBuffer>(entity);
                 AddComponent(entity, new IsMouseMove());
-                AddComponent(entity, new IsMergeSphere());
+                AddComponent(entity, new IsCollisionWithSphere());
 
                 SetComponentEnabled<IsMouseMove>(entity, false);
-                SetComponentEnabled<IsMergeSphere>(entity, false);
+                SetComponentEnabled<IsCollisionWithSphere>(entity, false);
             }
         }
     }
