@@ -6,5 +6,7 @@ namespace Components
     {
         public Entity from;
         public Entity to;
+        public bool launchLastStageMerge;
+        public int indexBetweenFromAndTo;
     }
 }

@@ -1,4 +1,5 @@
-﻿using Components.DynamicBuffers;
+﻿using Aspects;
+using Components.DynamicBuffers;
 using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -35,20 +36,12 @@ namespace Systems
         {
             internal EntityCommandBuffer ecb;
 
-            public void Execute(Entity entity, in LevelSettingComponent levelSetting)
+            public void Execute(LevelSettingAspect levelSettingAspect, in LevelSettingComponent levelSetting)
             {
                 for (var i = 0; i < levelSetting.countSphere; i++)
                 {
                     var newSphere = ecb.Instantiate(levelSetting.prefabSphere);
-                    ecb.SetName(newSphere, "Sphere" + i);
-                    ecb.SetComponent(newSphere, new LocalTransform()
-                    {
-                        Position = new float3(1 + i * 1.1f, -10, 1),
-                        Rotation = quaternion.identity,
-                        Scale = 1f
-                    });
-
-                    ecb.AppendToBuffer(entity, new NotActiveSphereBuffer { value = newSphere });
+                    levelSettingAspect.AddSphereInBuffer(ecb, newSphere, i);
                 }
             }
         }

@@ -12,7 +12,10 @@ namespace Baker
             {
                 var entity = GetEntity(TransformUsageFlags.None);
                 
-                AddComponent<MergeSphereComponent>(entity);
+                AddComponent(entity, new MergeSphereComponent()
+                {
+                    indexBetweenFromAndTo = -1
+                });
             }
         }
     }

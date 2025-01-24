@@ -4,6 +4,7 @@ using Components.DynamicBuffers;
 using Static;
 using Tags;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics.Systems;
@@ -21,6 +22,7 @@ namespace Systems
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<BlockElementBuffer>();
+            state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -40,7 +42,8 @@ namespace Systems
                 state.Dependency = new CreateJointForDisabledTargetGravity
                 {
                     ecb = ecb,
-                    bufferEntity = SystemAPI.GetSingletonEntity<BlockElementBuffer>()
+                    bufferEntity = SystemAPI.GetSingletonEntity<BlockElementBuffer>(),
+                    levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>()
                 }.Schedule(state.Dependency);
             }
             else if (count < 10 && !buffer.IsEmpty)
@@ -65,11 +68,12 @@ namespace Systems
         {
             internal EntityCommandBuffer.ParallelWriter ecb;
             public Entity bufferEntity;
+            [ReadOnly] public LevelSettingComponent levelSetting;
 
             private void Execute(Entity entity, [ChunkIndexInQuery] int sortKey, ElementAspect element)
             {
                 var e = StaticMethod.CreateJoint(ecb, sortKey, entity, element.TargetGravity.target,
-                    element.DistanceToTargetGravity, "JointNew");
+                    element.DistanceToTargetGravity, levelSetting.indexConnection,"JointNew");
                 ecb.AppendToBuffer(sortKey, bufferEntity, new BlockElementBuffer { element = e });
                 ecb.AddComponent<TagDisabledTargetGravity>(sortKey, entity);
             }

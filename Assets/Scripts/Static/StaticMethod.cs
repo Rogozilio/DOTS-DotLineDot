@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Components;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 
@@ -6,7 +7,7 @@ namespace Static
 {
     public static class StaticMethod
     {
-        public static void CreateJoint(EntityCommandBuffer ecb, Entity a, Entity b, float maxDistanceRange)
+        public static void CreateJoint(EntityCommandBuffer ecb, Entity a, Entity b, float maxDistanceRange, byte indexConnection)
         {
             var newEntity = ecb.CreateEntity();
 
@@ -16,11 +17,11 @@ namespace Static
 
             ecb.SetName(newEntity, "JointElement");
             ecb.AddComponent(newEntity, bodyPair);
-            ecb.AddComponent(newEntity, limitedDistance);
+            ecb.AddComponent(newEntity, limitedDistance); ecb.AddComponent(newEntity, new IndexConnectComponent{value = indexConnection});
             ecb.AddSharedComponent(newEntity, new PhysicsWorldIndex());
         }
         
-        public static Entity CreateJoint(EntityCommandBuffer.ParallelWriter ecb, int sortKey, Entity a, Entity b, float maxDistanceRange, string name = "JointElement")
+        public static Entity CreateJoint(EntityCommandBuffer.ParallelWriter ecb, int sortKey, Entity a, Entity b, float maxDistanceRange, byte indexConnection, string name = "JointElement")
         {
             var newEntity = ecb.CreateEntity(sortKey);
 
@@ -31,6 +32,7 @@ namespace Static
             ecb.SetName(sortKey, newEntity, name);
             ecb.AddComponent(sortKey, newEntity, bodyPair);
             ecb.AddComponent(sortKey, newEntity, limitedDistance);
+            ecb.AddComponent(sortKey, newEntity, new IndexConnectComponent{value = indexConnection});
             ecb.AddSharedComponent(sortKey, newEntity, new PhysicsWorldIndex());
 
             return newEntity;

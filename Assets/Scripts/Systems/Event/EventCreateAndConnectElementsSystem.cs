@@ -45,7 +45,8 @@ namespace Systems
             {
                 ecb = ecb,
                 elements = entityElementsNotConnected,
-                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
+                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                levelSettings = levelSettings
             }.Schedule(state.Dependency);
             state.Dependency.Complete();
             state.Dependency = new IncrementIndexConnectionJob().Schedule(state.Dependency);
@@ -91,21 +92,20 @@ namespace Systems
             internal EntityCommandBuffer ecb;
             public NativeArray<Entity> elements;
             [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
+            [ReadOnly] public LevelSettingComponent levelSettings;
 
             private void Execute(Entity entity, in ConnectSphere connectSphere)
             {
-                
-
                 var maxDistance = localTransforms[elements[0]].Scale / 1.5f;
 
-                StaticMethod.CreateJoint(ecb, entity, elements[0], maxDistance);
+                StaticMethod.CreateJoint(ecb, entity, elements[0], maxDistance, levelSettings.indexConnection);
 
                 for (var i = 0; i < elements.Length - 1; i++)
                 {
-                    StaticMethod.CreateJoint(ecb, elements[i], elements[i + 1], maxDistance);
+                    StaticMethod.CreateJoint(ecb, elements[i], elements[i + 1], maxDistance, levelSettings.indexConnection);
                 }
 
-                StaticMethod.CreateJoint(ecb, elements[^1], connectSphere.target, maxDistance);
+                StaticMethod.CreateJoint(ecb, elements[^1], connectSphere.target, maxDistance, levelSettings.indexConnection);
 
                 ecb.RemoveComponent<ConnectSphere>(entity);
                 ecb.RemoveComponent<TagElementsCreated>(entity);
