@@ -1,6 +1,7 @@
 ﻿using Aspects;
 using Components;
 using Components.DynamicBuffers;
+using Static;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -8,9 +9,9 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems
 {
@@ -45,14 +46,14 @@ namespace Systems
                 merge = merge,
                 deltaTime = SystemAPI.Time.fixedDeltaTime,
                 localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(),
-                isCollisionWithSpheres = SystemAPI.GetComponentLookup<IsCollisionWithSphere>(),
-                isMouseMoves = SystemAPI.GetComponentLookup<IsMouseMove>(),
+                isCollisionWithSpheres = SystemAPI.GetComponentLookup<IsCollisionWithSphere>(true),
+                isMouseMoves = SystemAPI.GetComponentLookup<IsMouseMove>(true),
             }.Schedule(state.Dependency);
-            if(!merge.ValueRO.launchLastStageMerge) return;
+            if (!merge.ValueRO.launchLastStageMerge) return;
             state.Dependency = new SetIndexBetweenFromAndToForMergeSphereJob
             {
                 merge = merge,
-                buffer = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true)
+                buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true)
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveConnectBetweenSphereJob
             {
@@ -62,14 +63,19 @@ namespace Systems
             state.Dependency = new RemoveIndexConnectInSphereJob
             {
                 merge = merge
-            }.ScheduleParallel(state.Dependency);
+            }.Schedule(state.Dependency);
+            state.Dependency = new ReconnectJointJob()
+            {
+                merge = merge,
+                ecb = ecb,
+                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>()
+            }.Schedule(state.Dependency);
             state.Dependency = new RemoveSphereJob()
             {
                 merge = merge,
                 ecb = ecb
             }.Schedule(state.Dependency);
-            Debug.Log("13");
-            merge.ValueRW.launchLastStageMerge = false;
         }
 
         [BurstCompile]
@@ -93,7 +99,7 @@ namespace Systems
 
             public void Execute(Entity entity)
             {
-                if (merge.ValueRW.from == entity) return;
+                if (merge.ValueRO.from == entity) return;
 
                 merge.ValueRW.to = entity;
             }
@@ -112,33 +118,33 @@ namespace Systems
 
             public void Execute()
             {
-                if (merge.ValueRW.from == Entity.Null || merge.ValueRW.to == Entity.Null) return;
+                if (merge.ValueRO.from == Entity.Null || merge.ValueRO.to == Entity.Null) return;
 
-                if (!isCollisionWithSpheres.IsComponentEnabled(merge.ValueRW.from) ||
-                    !isCollisionWithSpheres.IsComponentEnabled(merge.ValueRW.to))
+                if (!isCollisionWithSpheres.IsComponentEnabled(merge.ValueRO.from) ||
+                    !isCollisionWithSpheres.IsComponentEnabled(merge.ValueRO.to))
                     return;
 
-                if (isMouseMoves.IsComponentEnabled(merge.ValueRW.from) ||
-                    isMouseMoves.IsComponentEnabled(merge.ValueRW.to))
+                if (isMouseMoves.IsComponentEnabled(merge.ValueRO.from) ||
+                    isMouseMoves.IsComponentEnabled(merge.ValueRO.to))
                     return;
 
                 float3 direction =
-                    math.normalize(localTransforms[merge.ValueRW.to].Position -
-                                   localTransforms[merge.ValueRW.from].Position);
-                float distance = math.distance(localTransforms[merge.ValueRW.to].Position,
-                    localTransforms[merge.ValueRW.from].Position);
+                    math.normalizesafe(localTransforms[merge.ValueRO.to].Position -
+                                       localTransforms[merge.ValueRO.from].Position);
+                float distance = math.distance(localTransforms[merge.ValueRO.to].Position,
+                    localTransforms[merge.ValueRO.from].Position);
 
-                var transform = localTransforms[merge.ValueRW.from];
+                var transform = localTransforms[merge.ValueRO.from];
 
                 if (distance > 5f * deltaTime)
                     transform.Position += direction * 5f * deltaTime;
                 else
                 {
-                    transform.Position = localTransforms[merge.ValueRW.to].Position;
+                    transform.Position = localTransforms[merge.ValueRO.to].Position;
                     merge.ValueRW.launchLastStageMerge = true;
                 }
 
-                localTransforms[merge.ValueRW.from] = transform;
+                localTransforms[merge.ValueRO.from] = transform;
             }
         }
 
@@ -146,15 +152,15 @@ namespace Systems
         public struct SetIndexBetweenFromAndToForMergeSphereJob : IJob
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
-            [ReadOnly] public BufferLookup<IndexConnectionBuffer> buffer;
+            [ReadOnly] public BufferLookup<IndexConnectionBuffer> buffers;
 
             public void Execute()
             {
-                if (!buffer.EntityExists(merge.ValueRW.from) || !buffer.EntityExists(merge.ValueRW.to)) return;
+                if (!buffers.EntityExists(merge.ValueRO.from) || !buffers.EntityExists(merge.ValueRO.to)) return;
 
-                foreach (var indexFrom in buffer[merge.ValueRW.from])
+                foreach (var indexFrom in buffers[merge.ValueRO.from])
                 {
-                    foreach (var indexTo in buffer[merge.ValueRW.to])
+                    foreach (var indexTo in buffers[merge.ValueRO.to])
                     {
                         if (indexFrom.value != indexTo.value) continue;
 
@@ -173,27 +179,52 @@ namespace Systems
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
             public EntityCommandBuffer.ParallelWriter ecb;
 
-            public void Execute(Entity entity,[EntityIndexInQuery] int sortKey, in IndexConnectComponent indexConnect)
+            public void Execute(Entity entity, [EntityIndexInQuery] int sortKey, in IndexConnectComponent indexConnect)
             {
-                if (indexConnect.value == merge.ValueRW.indexBetweenFromAndTo)
+                if (indexConnect.value == merge.ValueRO.indexBetweenFromAndTo)
                     ecb.DestroyEntity(sortKey, entity);
             }
         }
-        
+
         [BurstCompile]
         public partial struct RemoveIndexConnectInSphereJob : IJobEntity
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
-
             public void Execute(ref DynamicBuffer<IndexConnectionBuffer> buffer)
             {
                 for (var i = 0; i < buffer.Length; i++)
                 {
-                    if (buffer[i].value != merge.ValueRW.indexBetweenFromAndTo) continue;
-                    
+                    if (buffer[i].value != merge.ValueRO.indexBetweenFromAndTo) continue;
+
                     buffer.RemoveAt(i);
-                    return;
                 }
+            }
+        }
+
+        [BurstCompile]
+        public partial struct ReconnectJointJob : IJobEntity
+        {
+            [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
+
+            public EntityCommandBuffer ecb;
+            [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
+            public BufferLookup<IndexConnectionBuffer> buffers;
+
+            public void Execute(Entity entity, in PhysicsConstrainedBodyPair bodyPair,
+                in IndexConnectComponent indexConnect)
+            {
+                if(merge.ValueRO.indexBetweenFromAndTo == indexConnect.value) return;
+                
+                if (merge.ValueRO.from != bodyPair.EntityA && merge.ValueRO.from != bodyPair.EntityB) return;
+
+                var element = merge.ValueRO.from != bodyPair.EntityA ? bodyPair.EntityA : bodyPair.EntityB;
+
+                ecb.DestroyEntity(entity);
+
+                StaticMethod.CreateJoint(ecb, merge.ValueRO.to, element, localTransforms[element].Scale / 1.5f,
+                    indexConnect.value);
+
+                buffers[merge.ValueRO.to].Add(new IndexConnectionBuffer{value = indexConnect.value});
             }
         }
 
@@ -203,11 +234,13 @@ namespace Systems
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
 
             public EntityCommandBuffer ecb;
-            
+
             public void Execute(LevelSettingAspect levelSettingAspect)
             {
-                levelSettingAspect.AddSphereInBuffer(ecb, merge.ValueRW.from);
+                levelSettingAspect.AddSphereInBuffer(ecb, merge.ValueRO.from);
                 merge.ValueRW.from = Entity.Null;
+
+                merge.ValueRW.launchLastStageMerge = false;
             }
         }
     }

@@ -7,7 +7,7 @@ namespace Static
 {
     public static class StaticMethod
     {
-        public static void CreateJoint(EntityCommandBuffer ecb, Entity a, Entity b, float maxDistanceRange, byte indexConnection)
+        public static void CreateJoint(EntityCommandBuffer ecb, Entity a, Entity b, float maxDistanceRange, byte indexConnection, string name = "JointElement")
         {
             var newEntity = ecb.CreateEntity();
 
@@ -15,7 +15,7 @@ namespace Static
             var limitedDistance =
                 PhysicsJoint.CreateLimitedDistance(float3.zero, float3.zero, new Math.FloatRange(0, maxDistanceRange));
 
-            ecb.SetName(newEntity, "JointElement");
+            ecb.SetName(newEntity, name);
             ecb.AddComponent(newEntity, bodyPair);
             ecb.AddComponent(newEntity, limitedDistance); ecb.AddComponent(newEntity, new IndexConnectComponent{value = indexConnection});
             ecb.AddSharedComponent(newEntity, new PhysicsWorldIndex());

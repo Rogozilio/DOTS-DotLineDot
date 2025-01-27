@@ -25,8 +25,8 @@ namespace Systems
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecbSinglton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
-            var ecb = ecbSinglton.CreateCommandBuffer(state.WorldUnmanaged);
+            var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
+            var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
             var sphereBuffer = SystemAPI.GetSingletonBuffer<NotActiveSphereBuffer>();
             
             state.Dependency = new SpawnSphereJob
@@ -52,6 +52,7 @@ namespace Systems
                 {
                     ecb.SetComponentEnabled<IsMouseMove>(sphereBuffer[^1].value, true);
                     ecb.AddComponent(entity, new ConnectSphere(){target = sphereBuffer[^1].value});
+                    
                     var elementBuffer = new IndexConnectionBuffer() { value = levelSetting.indexConnection };
                     ecb.AppendToBuffer(entity, elementBuffer);
                     ecb.AppendToBuffer(sphereBuffer[^1].value, elementBuffer);

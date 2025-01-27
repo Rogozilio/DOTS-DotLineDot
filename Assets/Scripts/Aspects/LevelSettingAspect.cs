@@ -8,14 +8,17 @@ namespace Aspects
     public readonly partial struct LevelSettingAspect : IAspect
     {
         private readonly Entity _entity;
+        private readonly RefRO<LevelSettingComponent> _levelSettingComponent;
         private readonly DynamicBuffer<NotActiveSphereBuffer> _buffer;
-
         public DynamicBuffer<NotActiveSphereBuffer> buffer => _buffer;
+        public LevelSettingComponent level => _levelSettingComponent.ValueRO;
 
         public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity)
         {
             AddSphereInBuffer(ecb, entity, _buffer.Length);
         }
+
+        public int LengthBuffer => _buffer.Length;
         
         public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, int indexBuffer)
         {
@@ -30,6 +33,11 @@ namespace Aspects
             ecb.AppendToBuffer(_entity, new NotActiveSphereBuffer { value = entity });
         }
 
-        public Entity GetSphereInBuffer => buffer[^1].value;
+        public Entity GetSphereFromBuffer()
+        {
+            var entity = _buffer[^1].value;
+            buffer.RemoveAt(_buffer.Length - 1);
+            return entity;
+        } 
     }
 }
