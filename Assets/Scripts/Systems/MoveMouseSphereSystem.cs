@@ -24,27 +24,27 @@ namespace Systems
         public void OnUpdate(ref SystemState state)
         {
             var raycastHit = SystemAPI.GetSingleton<RaycastHitComponent>();
-            var data = SystemAPI.GetSingleton<LevelSettingComponent>();
+            var levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>();
             
             state.Dependency = new SphereFollowMouseJob
             {
                 hitPoint = raycastHit.position,
-                speed = data.speedMoveSphere,
-                fixedDeltaTime = SystemAPI.Time.fixedDeltaTime
+                speed = levelSetting.speedMoveSphere,
             }.Schedule(state.Dependency);
         }
         
+        [BurstCompile]
+        [WithAll(typeof(IsMouseMove))]
         private partial struct SphereFollowMouseJob : IJobEntity
         {
             public float3 hitPoint;
             public float speed;
-            public float fixedDeltaTime;
-            private void Execute(ref PhysicsVelocity velocity, in LocalToWorld world, in IsMouseMove tag)
+            private void Execute(ref PhysicsVelocity velocity, in LocalToWorld world)
             {
-                velocity.Linear = math.normalize(hitPoint - world.Position) * speed * fixedDeltaTime;
+                float3 direction = hitPoint - world.Position;
+                float distance = math.length(direction);
                 
-                if(math.distance(hitPoint, world.Position) < 0.15f)
-                    velocity.Linear = float3.zero;
+                velocity.Linear = math.normalizesafe(direction) * math.min(speed, speed * distance);
             }
         }
     }

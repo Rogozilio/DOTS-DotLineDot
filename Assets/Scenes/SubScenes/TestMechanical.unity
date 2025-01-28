@@ -892,7 +892,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   countSphere: 32
-  speedMoveSphere: 1000
+  speedMoveSphere: 25
   speedGravityInSphere: 5
   countElements: 20
   prefabSphere: {fileID: 2763660226201864276, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}

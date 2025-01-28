@@ -41,9 +41,7 @@ namespace Systems
 
             private void Execute(ElementAspect element)
             {
-                //TODO: Изменить притяжку к сфере, но позже     
                 if(element.TargetGravity.target == Entity.Null) return;
-                if(isMouseMoves.GetEnabledRefRO<IsMouseMove>(element.TargetGravity.target).ValueRO) return;
                 
                 element.LinearVelocity = element.ToTargetGravity * speed;
                 element.EnableTargetGravity = false;
