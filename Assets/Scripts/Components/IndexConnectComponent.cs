@@ -4,6 +4,6 @@ namespace Components
 {
     public struct IndexConnectComponent : IComponentData
     {
-        public byte value;
+        public int value;
     }
 }

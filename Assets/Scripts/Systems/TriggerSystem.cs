@@ -1,19 +1,15 @@
-﻿using Aspects;
-using Components;
+﻿using Components;
 using Components.DynamicBuffers;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Physics;
-using Unity.Physics.Systems;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems
 {
-    [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
+    [UpdateInGroup(typeof(FixedStepSimulationSystemGroup), OrderFirst = true)]
     public partial struct TriggerSystem : ISystem
     {
         [BurstCompile]
@@ -28,7 +24,7 @@ namespace Systems
             var simulationSingleton = SystemAPI.GetSingleton<SimulationSingleton>();
             state.Dependency = new TriggerEvent
             {
-                sphereComponent = SystemAPI.GetComponentLookup<TagSphere>(true),
+                sphereComponent = SystemAPI.GetComponentLookup<SphereComponent>(true),
                 targetGravityComponent = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
                 localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true),
                 indexesBuffer = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
@@ -40,7 +36,7 @@ namespace Systems
         [BurstCompile]
         struct TriggerEvent : ITriggerEventsJob
         {
-            [ReadOnly] public ComponentLookup<TagSphere> sphereComponent;
+            [ReadOnly] public ComponentLookup<SphereComponent> sphereComponent;
             public ComponentLookup<TargetGravityComponent> targetGravityComponent;
             [ReadOnly] public ComponentLookup<LocalToWorld> localToWorld;
 

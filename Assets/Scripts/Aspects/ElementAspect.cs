@@ -13,7 +13,6 @@ namespace Aspects
         private readonly RefRO<LocalToWorld> _localToWorld;
         private readonly RefRW<PhysicsVelocity> _physicsVelocity;
         private readonly RefRW<TargetGravityComponent> _targetGravityComponent;
-        private readonly RefRO<IndexConnectComponent> _indexConnect;
 
         private readonly EnabledRefRW<TargetGravityComponent> _enabledTargetGravityComponent;
 
@@ -42,7 +41,5 @@ namespace Aspects
 
         public float DistanceToTargetGravity =>
             math.distance(_localToWorld.ValueRO.Position, _targetGravityComponent.ValueRO.position);
-
-        public byte IndexConnect => _indexConnect.ValueRO.value;
     }
 }

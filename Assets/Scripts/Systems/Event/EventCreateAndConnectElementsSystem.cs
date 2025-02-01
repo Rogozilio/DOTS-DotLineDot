@@ -1,5 +1,6 @@
 ﻿using Baker;
 using Components;
+using Components.Shared;
 using Static;
 using Tags;
 using Unity.Burst;
@@ -59,15 +60,16 @@ namespace Systems
         }
 
         [WithNone(typeof(TagElementsCreated))]
+        [WithAll(typeof(ConnectSphere))]
         private partial struct CreateElementsJob : IJobEntity
         {
             internal EntityCommandBuffer ecb;
             public LevelSettingComponent levelSettings;
             [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
 
-            private void Execute(Entity entity, in ConnectSphere connectSphere)
+            private void Execute(Entity entity, in SphereComponent sphere, in IndexSharedComponent index)
             {
-                for (byte i = 0; i < levelSettings.countElements; i++)
+                for (byte i = 0; i < sphere.countElements; i++)
                 {
                     var newElement = ecb.Instantiate(levelSettings.prefabElement);
                     ecb.SetName(newElement, "Element " + levelSettings.indexConnection + " (" + i + ")");
@@ -81,6 +83,7 @@ namespace Systems
                         Rotation = localTransforms[levelSettings.prefabElement].Rotation,
                         Scale = localTransforms[levelSettings.prefabElement].Scale
                     });
+                    ecb.AddSharedComponent(newElement, new IndexSharedComponent{value = index.value});
                 }
 
                 ecb.AddComponent<TagElementsCreated>(entity);

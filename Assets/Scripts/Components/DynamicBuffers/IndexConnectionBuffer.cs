@@ -5,6 +5,6 @@ namespace Components.DynamicBuffers
     [InternalBufferCapacity(32)]
     public struct IndexConnectionBuffer : IBufferElementData
     {
-        public byte value;
+        public int value;
     }
 }

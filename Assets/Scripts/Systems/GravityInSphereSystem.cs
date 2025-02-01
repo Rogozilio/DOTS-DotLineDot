@@ -29,15 +29,14 @@ namespace Systems
             state.Dependency = new GravityInSphereJob
             {
                 speed = data.speedGravityInSphere,
-                isMouseMoves = SystemAPI.GetComponentLookup<IsMouseMove>(true)
             }.Schedule(state.Dependency);
         }
 
         [BurstCompile]
+        [WithAll(typeof(TargetGravityComponent))]
         private partial struct GravityInSphereJob : IJobEntity
         {
             public float speed;
-            [ReadOnly] public ComponentLookup<IsMouseMove> isMouseMoves;
 
             private void Execute(ElementAspect element)
             {

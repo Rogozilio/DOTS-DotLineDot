@@ -11,8 +11,6 @@ namespace Baker
         public int countSphere = 32;
         public float speedMoveSphere = 1f;
         public float speedGravityInSphere = 1f;
-        [Header("Element")]
-        public byte countElements;
         [Header("Prefabs")]
         public GameObject prefabSphere;
         public GameObject prefabElement;
@@ -25,7 +23,6 @@ namespace Baker
             var entity = GetEntity(TransformUsageFlags.None);
             var levelSetting = new LevelSettingComponent();
             levelSetting.countSphere = authoring.countSphere;
-            levelSetting.countElements = authoring.countElements;
             levelSetting.prefabSphere = GetEntity(authoring.prefabSphere, TransformUsageFlags.Dynamic);
             levelSetting.prefabElement = GetEntity(authoring.prefabElement, TransformUsageFlags.Dynamic);
             levelSetting.speedMoveSphere = authoring.speedMoveSphere;

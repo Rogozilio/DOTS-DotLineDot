@@ -1,11 +1,11 @@
 ﻿using Components;
 using Components.DynamicBuffers;
+using Components.Shared;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems
 {
@@ -35,20 +35,27 @@ namespace Systems
                 sphereBuffer = sphereBuffer,
                 levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>()
             }.Schedule(state.Dependency);
+
+            state.Dependency = new BlockSpawnSphereJob
+            {
+                ecb = ecb
+            }.Schedule(state.Dependency);
         }
 
         [BurstCompile]
+        [WithOptions(EntityQueryOptions.FilterWriteGroup)]
         public partial struct SpawnSphereJob : IJobEntity
         {
             internal EntityCommandBuffer ecb;
             public DynamicBuffer<NotActiveSphereBuffer> sphereBuffer;
             [ReadOnly]public LevelSettingComponent levelSetting;
-            public void Execute(Entity entity,in SpawnSphereComponent spawnSphereComponent, in LocalTransform transform)
+            public void Execute(Entity entity,ref SpawnSphereComponent spawnSphere, in LocalTransform transform)
             {
                 if(sphereBuffer.Length == 0) return;
                 ecb.SetComponent(sphereBuffer[^1].value, transform);
+                ecb.SetSharedComponent(sphereBuffer[^1].value, new IndexSharedComponent(){value = spawnSphere.index});
 
-                if (spawnSphereComponent.isAddConnectSphere)
+                if (spawnSphere.isAddConnectSphere)
                 {
                     ecb.SetComponentEnabled<IsMouseMove>(sphereBuffer[^1].value, true);
                     ecb.AddComponent(entity, new ConnectSphere(){target = sphereBuffer[^1].value});
@@ -59,6 +66,18 @@ namespace Systems
                 }
                 
                 sphereBuffer.RemoveAt(sphereBuffer.Length - 1);
+                ecb.RemoveComponent<SpawnSphereComponent>(entity);
+            }
+        }
+
+        [BurstCompile]
+        [WithAll(typeof(IsBlockedSphere))]
+        [WithAll(typeof(SpawnSphereComponent))]
+        public partial struct BlockSpawnSphereJob : IJobEntity
+        {
+            public EntityCommandBuffer ecb;
+            public void Execute(Entity entity)
+            {
                 ecb.RemoveComponent<SpawnSphereComponent>(entity);
             }
         }

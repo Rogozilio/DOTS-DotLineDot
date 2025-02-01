@@ -1,4 +1,5 @@
 ﻿using Components.DynamicBuffers;
+using Components.Shared;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -19,7 +20,7 @@ namespace Aspects
         }
 
         public int LengthBuffer => _buffer.Length;
-        
+
         public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, int indexBuffer)
         {
             ecb.SetName(entity, "Sphere" + indexBuffer);
@@ -29,7 +30,8 @@ namespace Aspects
                 Rotation = quaternion.identity,
                 Scale = 1f
             });
-            
+            ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
+
             ecb.AppendToBuffer(_entity, new NotActiveSphereBuffer { value = entity });
         }
 
@@ -38,6 +40,6 @@ namespace Aspects
             var entity = _buffer[^1].value;
             buffer.RemoveAt(_buffer.Length - 1);
             return entity;
-        } 
+        }
     }
 }

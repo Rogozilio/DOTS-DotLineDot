@@ -1,4 +1,5 @@
 ﻿using Components;
+using Components.Shared;
 using Tags;
 using Unity.Entities;
 using UnityEngine;
