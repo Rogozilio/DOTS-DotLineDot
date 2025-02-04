@@ -39,9 +39,11 @@ namespace Systems
         {
             public float3 hitPoint;
             public float speed;
-            private void Execute(ref PhysicsVelocity velocity, in LocalToWorld world)
+            private void Execute(ref PhysicsVelocity velocity, in LocalTransform transform)
             {
-                float3 direction = hitPoint - world.Position;
+                speed *= 1 / transform.Scale;
+                
+                float3 direction = hitPoint - transform.Position;
                 float distance = math.length(direction);
                 
                 velocity.Linear = math.normalizesafe(direction) * math.min(speed, speed * distance);

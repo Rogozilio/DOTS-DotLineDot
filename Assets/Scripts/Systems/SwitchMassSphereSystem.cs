@@ -4,6 +4,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Physics.Systems;
+using Unity.Transforms;
 using UnityEngine;
 
 namespace Systems
@@ -24,9 +25,9 @@ namespace Systems
     [WithAll(typeof(IsMouseMove))]
     partial struct DynamicMassSphereJob : IJobEntity
     {
-        private void Execute(ref PhysicsMass mass)
+        private void Execute(ref PhysicsMass mass, in LocalTransform transform)
         {
-            mass.InverseMass = 1f;
+            mass.InverseMass = transform.Scale;
         }
     }
     
