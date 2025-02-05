@@ -41,7 +41,7 @@ namespace Systems
                 for (var i = 0; i < levelSetting.countSphere; i++)
                 {
                     var newSphere = ecb.Instantiate(levelSetting.prefabSphere);
-                    levelSettingAspect.AddSphereInBuffer(ecb, newSphere, i);
+                    levelSettingAspect.AddSphereInBuffer(ecb, newSphere, i, true);
                 }
             }
         }

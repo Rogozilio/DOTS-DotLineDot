@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Components.DynamicBuffers;
+using Unity.Entities;
 
 namespace Components
 {
@@ -7,6 +8,5 @@ namespace Components
         public Entity from;
         public Entity to;
         public bool launchLastStageMerge;
-        public int indexBetweenFromAndTo;
     }
 }

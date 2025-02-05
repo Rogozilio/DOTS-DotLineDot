@@ -1,4 +1,5 @@
 ﻿using Components;
+using Components.DynamicBuffers;
 using Unity.Entities;
 using UnityEngine;
 
@@ -12,10 +13,8 @@ namespace Baker
             {
                 var entity = GetEntity(TransformUsageFlags.None);
                 
-                AddComponent(entity, new MergeSphereComponent()
-                {
-                    indexBetweenFromAndTo = -1
-                });
+                AddComponent(entity, new MergeSphereComponent());
+                AddBuffer<IndexConnectionForRemoveBuffer>(entity);
             }
         }
     }

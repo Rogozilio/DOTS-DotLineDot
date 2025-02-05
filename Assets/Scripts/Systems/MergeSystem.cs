@@ -1,6 +1,7 @@
 ﻿using Aspects;
 using Components;
 using Components.DynamicBuffers;
+using Components.Shared;
 using Static;
 using Tags;
 using Unity.Burst;
@@ -33,6 +34,10 @@ namespace Systems
             var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
+            var bufferIndexConnectForRemove = SystemAPI.GetSingletonBuffer<IndexConnectionForRemoveBuffer>();
+
+            bufferIndexConnectForRemove.Clear();
+
             state.Dependency = new SetMergeSphereFromJob
             {
                 merge = merge
@@ -53,25 +58,33 @@ namespace Systems
             state.Dependency = new SetIndexBetweenFromAndToForMergeSphereJob
             {
                 merge = merge,
-                buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true)
+                buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
+                bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveConnectBetweenSphereJob
             {
-                merge = merge,
-                ecb = ecb.AsParallelWriter()
+                ecb = ecb.AsParallelWriter(),
+                bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveIndexConnectInSphereJob
             {
-                merge = merge
+                bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
-            state.Dependency = new ReconnectJointJob()
+            state.Dependency = new ReconnectJointJob
             {
                 merge = merge,
                 ecb = ecb,
                 localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
-                buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>()
+                buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(),
+                bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
-            state.Dependency = new RemoveSphereJob()
+             state.Dependency = new ChangeIndexSharedSphereJob
+            {
+                ecb = ecb,
+                oldIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.to).value,
+                newIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.from).value
+            }.Schedule(state.Dependency);
+            state.Dependency = new RemoveSphereJob
             {
                 merge = merge,
                 ecb = ecb
@@ -153,6 +166,7 @@ namespace Systems
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
             [ReadOnly] public BufferLookup<IndexConnectionBuffer> buffers;
+            public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
 
             public void Execute()
             {
@@ -164,39 +178,42 @@ namespace Systems
                     {
                         if (indexFrom.value != indexTo.value) continue;
 
-                        merge.ValueRW.indexBetweenFromAndTo = indexFrom.value;
-                        return;
+                        bufferIndexForRemove.Add(new IndexConnectionForRemoveBuffer { value = indexFrom.value });
                     }
                 }
-
-                merge.ValueRW.indexBetweenFromAndTo = -1;
             }
         }
 
         [BurstCompile]
         public partial struct RemoveConnectBetweenSphereJob : IJobEntity
         {
-            [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
             public EntityCommandBuffer.ParallelWriter ecb;
+            [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
 
             public void Execute(Entity entity, [EntityIndexInQuery] int sortKey, in IndexConnectComponent indexConnect)
             {
-                if (indexConnect.value == merge.ValueRO.indexBetweenFromAndTo)
-                    ecb.DestroyEntity(sortKey, entity);
+                foreach (var index in bufferIndexForRemove)
+                {
+                    if (indexConnect.value == index.value)
+                        ecb.DestroyEntity(sortKey, entity);
+                }
             }
         }
 
         [BurstCompile]
         public partial struct RemoveIndexConnectInSphereJob : IJobEntity
         {
-            [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
+            [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
+
             public void Execute(ref DynamicBuffer<IndexConnectionBuffer> buffer)
             {
                 for (var i = 0; i < buffer.Length; i++)
                 {
-                    if (buffer[i].value != merge.ValueRO.indexBetweenFromAndTo) continue;
-
-                    buffer.RemoveAt(i);
+                    foreach (var index in bufferIndexForRemove)
+                    {
+                        if (buffer[i].value == index.value)
+                            buffer.RemoveAt(i);
+                    }
                 }
             }
         }
@@ -209,12 +226,16 @@ namespace Systems
             public EntityCommandBuffer ecb;
             [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
             public BufferLookup<IndexConnectionBuffer> buffers;
+            [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
 
             public void Execute(Entity entity, in PhysicsConstrainedBodyPair bodyPair,
                 in IndexConnectComponent indexConnect)
             {
-                if(merge.ValueRO.indexBetweenFromAndTo == indexConnect.value) return;
-                
+                foreach (var index in bufferIndexForRemove)
+                {
+                    if (index.value == indexConnect.value) return;
+                }
+
                 if (merge.ValueRO.from != bodyPair.EntityA && merge.ValueRO.from != bodyPair.EntityB) return;
 
                 var element = merge.ValueRO.from != bodyPair.EntityA ? bodyPair.EntityA : bodyPair.EntityB;
@@ -224,7 +245,22 @@ namespace Systems
                 StaticMethod.CreateJoint(ecb, merge.ValueRO.to, element, localTransforms[element].Scale / 1.5f,
                     indexConnect.value);
 
-                buffers[merge.ValueRO.to].Add(new IndexConnectionBuffer{value = indexConnect.value});
+                buffers[merge.ValueRO.to].Add(new IndexConnectionBuffer { value = indexConnect.value });
+            }
+        }
+
+        [BurstCompile]
+        public partial struct ChangeIndexSharedSphereJob : IJobEntity
+        {
+            public EntityCommandBuffer ecb;
+            [ReadOnly] public int oldIndex;
+            [ReadOnly] public int newIndex;
+
+            public void Execute(Entity entity, in IndexSharedComponent index)
+            {
+                if (index.value != oldIndex) return;
+
+                ecb.SetSharedComponent(entity, new IndexSharedComponent { value = newIndex });
             }
         }
 

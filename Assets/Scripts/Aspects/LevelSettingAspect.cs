@@ -14,16 +14,18 @@ namespace Aspects
         public DynamicBuffer<NotActiveSphereBuffer> buffer => _buffer;
         public LevelSettingComponent level => _levelSettingComponent.ValueRO;
 
-        public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity)
+        public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, bool isChangeName = false)
         {
-            AddSphereInBuffer(ecb, entity, _buffer.Length);
+            AddSphereInBuffer(ecb, entity, _buffer.Length, isChangeName);
         }
 
         public int LengthBuffer => _buffer.Length;
 
-        public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, int indexBuffer)
+        public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, int indexBuffer, bool isChangeName = false)
         {
-            ecb.SetName(entity, "Sphere" + indexBuffer);
+            if(isChangeName)
+                ecb.SetName(entity, "Sphere" + indexBuffer);
+            
             ecb.SetComponent(entity, new LocalTransform()
             {
                 Position = new float3(1 + indexBuffer * 1.1f, -10, 1),
@@ -31,6 +33,7 @@ namespace Aspects
                 Scale = 1f
             });
             ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
+            ecb.SetBuffer<IndexConnectionBuffer>(entity); //Clear buffer
 
             ecb.AppendToBuffer(_entity, new NotActiveSphereBuffer { value = entity });
         }

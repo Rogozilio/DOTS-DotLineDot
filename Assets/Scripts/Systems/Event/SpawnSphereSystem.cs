@@ -28,7 +28,7 @@ namespace Systems
             var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
             var sphereBuffer = SystemAPI.GetSingletonBuffer<NotActiveSphereBuffer>();
-            
+
             state.Dependency = new SpawnSphereJob
             {
                 ecb = ecb,
@@ -48,23 +48,25 @@ namespace Systems
         {
             internal EntityCommandBuffer ecb;
             public DynamicBuffer<NotActiveSphereBuffer> sphereBuffer;
-            [ReadOnly]public LevelSettingComponent levelSetting;
-            public void Execute(Entity entity,ref SpawnSphereComponent spawnSphere, in LocalTransform transform)
+            [ReadOnly] public LevelSettingComponent levelSetting;
+
+            public void Execute(Entity entity, ref SpawnSphereComponent spawnSphere, in LocalTransform transform)
             {
-                if(sphereBuffer.Length == 0) return;
+                if (sphereBuffer.Length == 0) return;
                 ecb.SetComponent(sphereBuffer[^1].value, transform);
-                ecb.SetSharedComponent(sphereBuffer[^1].value, new IndexSharedComponent(){value = spawnSphere.index});
+                ecb.SetSharedComponent(sphereBuffer[^1].value,
+                    new IndexSharedComponent() { value = spawnSphere.index });
 
                 if (spawnSphere.isAddConnectSphere)
                 {
                     ecb.SetComponentEnabled<IsMouseMove>(sphereBuffer[^1].value, true);
-                    ecb.AddComponent(entity, new ConnectSphere(){target = sphereBuffer[^1].value});
-                    
-                    var elementBuffer = new IndexConnectionBuffer() { value = levelSetting.indexConnection };
+                    ecb.AddComponent(entity, new ConnectSphere { target = sphereBuffer[^1].value });
+
+                    var elementBuffer = new IndexConnectionBuffer { value = levelSetting.indexConnection };
                     ecb.AppendToBuffer(entity, elementBuffer);
                     ecb.AppendToBuffer(sphereBuffer[^1].value, elementBuffer);
                 }
-                
+
                 sphereBuffer.RemoveAt(sphereBuffer.Length - 1);
                 ecb.RemoveComponent<SpawnSphereComponent>(entity);
             }
@@ -76,6 +78,7 @@ namespace Systems
         public partial struct BlockSpawnSphereJob : IJobEntity
         {
             public EntityCommandBuffer ecb;
+
             public void Execute(Entity entity)
             {
                 ecb.RemoveComponent<SpawnSphereComponent>(entity);

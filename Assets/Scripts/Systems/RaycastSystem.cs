@@ -1,4 +1,5 @@
 ﻿using Components;
+using Components.Shared;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -62,7 +63,12 @@ namespace Systems
                 }
                 else if (input.isRightMouseClicked)
                 {
-                    ecb.AddComponent(hit.Entity, new SpawnSphereComponent{isAddConnectSphere = true});
+                    var index = state.EntityManager.GetSharedComponent<IndexSharedComponent>(hit.Entity);
+                    ecb.AddComponent(hit.Entity, new SpawnSphereComponent
+                    {
+                        index = index.value,
+                        isAddConnectSphere = true
+                    });
                 }
             }
         }
