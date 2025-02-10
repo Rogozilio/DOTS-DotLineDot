@@ -16,11 +16,6 @@ namespace Systems
     public partial struct ResizeSphereSystem : ISystem
     {
         [BurstCompile]
-        public void OnCreate(ref SystemState state)
-        {
-        }
-
-        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             state.EntityManager.GetAllUniqueSharedComponents(out NativeList<IndexSharedComponent> indexes,
@@ -48,8 +43,8 @@ namespace Systems
                 float count = limit - queryElements.CalculateEntityCount();
 
                 if (count == 0) continue;
-                
-                Debug.Log(count + " " + limit);
+
+                //Debug.Log(index.value + " " + count + " " + limit);
 
                 state.Dependency = new ResizeSphereJob
                 {

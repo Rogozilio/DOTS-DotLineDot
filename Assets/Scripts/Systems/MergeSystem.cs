@@ -13,6 +13,7 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Systems
 {
@@ -30,7 +31,6 @@ namespace Systems
         public void OnUpdate(ref SystemState state)
         {
             var merge = SystemAPI.GetSingletonRW<MergeSphereComponent>();
-
             var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
@@ -78,16 +78,37 @@ namespace Systems
                 buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(),
                 bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
-             state.Dependency = new ChangeIndexSharedSphereJob
-            {
-                ecb = ecb,
-                oldIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.to).value,
-                newIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.from).value
-            }.Schedule(state.Dependency);
             state.Dependency = new RemoveSphereJob
             {
                 merge = merge,
                 ecb = ecb
+            }.Schedule(state.Dependency);
+
+            var oldIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.to).value;
+            var newIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.from).value;
+
+            if (oldIndex != newIndex)
+            {
+                var spheres = SystemAPI.GetComponentLookup<SphereComponent>(true);
+
+                state.Dependency = new ChangeIndexSharedSphereJob
+                {
+                    ecb = ecb,
+                    oldIndex = oldIndex,
+                    newIndex = newIndex
+                }.Schedule(state.Dependency);
+                state.Dependency = new ChangeLimitElementsInSphereJob
+                {
+                    oldIndex = oldIndex,
+                    newIndex = newIndex,
+                    sumCountElements = spheres[merge.ValueRO.from].countElements +
+                                       spheres[merge.ValueRO.to].countElements
+                }.Schedule(state.Dependency);
+            }
+
+            state.Dependency = new ClearMergeComponentJob
+            {
+                merge = merge
             }.Schedule(state.Dependency);
         }
 
@@ -97,7 +118,7 @@ namespace Systems
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
 
-            public void Execute(Entity entity)
+            public void Execute(Entity entity, in SphereComponent sphere)
             {
                 merge.ValueRW.from = entity;
             }
@@ -110,7 +131,7 @@ namespace Systems
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
 
-            public void Execute(Entity entity)
+            public void Execute(Entity entity, in SphereComponent sphere)
             {
                 if (merge.ValueRO.from == entity) return;
 
@@ -250,6 +271,19 @@ namespace Systems
         }
 
         [BurstCompile]
+        public partial struct RemoveSphereJob : IJobEntity
+        {
+            [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
+
+            public EntityCommandBuffer ecb;
+
+            public void Execute(LevelSettingAspect levelSettingAspect)
+            {
+                levelSettingAspect.AddSphereInBuffer(ecb, merge.ValueRO.from);
+            }
+        }
+
+        [BurstCompile]
         public partial struct ChangeIndexSharedSphereJob : IJobEntity
         {
             public EntityCommandBuffer ecb;
@@ -265,17 +299,28 @@ namespace Systems
         }
 
         [BurstCompile]
-        public partial struct RemoveSphereJob : IJobEntity
+        public partial struct ChangeLimitElementsInSphereJob : IJobEntity
+        {
+            [ReadOnly] public int oldIndex;
+            [ReadOnly] public int newIndex;
+            [ReadOnly] public int sumCountElements;
+
+            public void Execute(ref SphereComponent sphere, in IndexSharedComponent index)
+            {
+                if (index.value != oldIndex && index.value != newIndex) return;
+
+                sphere.countElements = sumCountElements;
+            }
+        }
+
+        [BurstCompile]
+        public partial struct ClearMergeComponentJob : IJobEntity
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
 
-            public EntityCommandBuffer ecb;
-
-            public void Execute(LevelSettingAspect levelSettingAspect)
+            public void Execute()
             {
-                levelSettingAspect.AddSphereInBuffer(ecb, merge.ValueRO.from);
                 merge.ValueRW.from = Entity.Null;
-
                 merge.ValueRW.launchLastStageMerge = false;
             }
         }

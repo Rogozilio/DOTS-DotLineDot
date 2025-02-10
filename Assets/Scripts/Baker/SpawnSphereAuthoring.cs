@@ -10,6 +10,7 @@ namespace Baker
     public class SpawnSphereAuthoring : MonoBehaviour
     {
         [HideInInspector] public int index = -1;
+        [HideInInspector] public int countElements = 20;
 
         private void OnValidate()
         {
@@ -34,7 +35,8 @@ namespace Baker
 
                 AddComponent(entity, new SpawnSphereComponent
                 {
-                    index = authoring.index
+                    index = authoring.index,
+                    countElements = authoring.countElements
                 });
             }
         }
@@ -43,9 +45,11 @@ namespace Baker
         private class SpawnSphereAuthoringEditor : Editor
         {
             private SerializedProperty _indexProperty;
+            private SerializedProperty _countElementsProperty;
             private void OnEnable()
             {
                 _indexProperty = serializedObject.FindProperty("index");
+                _countElementsProperty = serializedObject.FindProperty("countElements");
             }
 
             public override void OnInspectorGUI()
@@ -53,6 +57,10 @@ namespace Baker
                 GUI.enabled = false;
                 EditorGUILayout.PropertyField(_indexProperty);
                 GUI.enabled = true;
+                
+                EditorGUILayout.PropertyField(_countElementsProperty);
+
+                serializedObject.ApplyModifiedProperties();
             }
         }
     }

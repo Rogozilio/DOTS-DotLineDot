@@ -15,7 +15,6 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
-    //[UpdateAfter(typeof(MoveMouseSphereSystem))]
     [UpdateBefore(typeof(GravityInSphereSystem))]
     public partial struct BlockElementsInSphere : ISystem
     {
@@ -58,9 +57,9 @@ namespace Systems
                 var count = GetCountElements(entityQueryElements, index);
                 var isBlocked = GetCountElements(entityQueryBlockedSpheres, index) > 0;
 
-                Debug.Log("Index " + index.value + " Count " + count);
+                //Debug.Log("Index " + index.value + " Count " + count + " CountMax " + countMax);
 
-                if (count >= countMax - 4 && !isBlocked)
+                if (count > countMax && !isBlocked)
                 {
                     Debug.Log("Block Index " + index.value + "; Count " + count + " " + SystemAPI.Time.ElapsedTime);
                     state.Dependency = new CreateJointForDisabledTargetGravity
@@ -74,12 +73,12 @@ namespace Systems
                         value = true,
                         index = index.value
                     }.Schedule(state.Dependency);
-                    break;
+                    continue;
                 }
                 
-                if (count < countMax - 6 && isBlocked)
+                if (count < countMax - 3 && isBlocked)
                 {
-                    Debug.Log("Unblock " + count + " " + SystemAPI.Time.ElapsedTime);
+                    Debug.Log("Unblock Index " + index.value +"; Count " + count + " " + SystemAPI.Time.ElapsedTime);
           
                     state.Dependency = new RemoveFromBlockElementBufferByIndexJob
                     {
@@ -90,7 +89,6 @@ namespace Systems
                         value = false,
                         index = index.value
                     }.Schedule(state.Dependency);
-                    break;
                 }
             }
 

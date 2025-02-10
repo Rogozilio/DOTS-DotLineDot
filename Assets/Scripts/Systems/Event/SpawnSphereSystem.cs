@@ -54,6 +54,8 @@ namespace Systems
             {
                 if (sphereBuffer.Length == 0) return;
                 ecb.SetComponent(sphereBuffer[^1].value, transform);
+                ecb.SetComponent(sphereBuffer[^1].value,
+                    new SphereComponent() { countElements = spawnSphere.countElements });
                 ecb.SetSharedComponent(sphereBuffer[^1].value,
                     new IndexSharedComponent() { value = spawnSphere.index });
 

@@ -4,6 +4,6 @@ namespace Tags
 {
     public struct SphereComponent : IComponentData
     {
-        public byte countElements;
+        public int countElements;
     }
 }

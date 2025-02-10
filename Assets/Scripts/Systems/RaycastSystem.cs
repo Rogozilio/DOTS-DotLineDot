@@ -67,6 +67,7 @@ namespace Systems
                     ecb.AddComponent(hit.Entity, new SpawnSphereComponent
                     {
                         index = index.value,
+                        countElements = SystemAPI.GetComponent<SphereComponent>(hit.Entity).countElements,
                         isAddConnectSphere = true
                     });
                 }

@@ -12,7 +12,7 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
-    public partial struct EventCreateAndConnectElementsSystem : ISystem
+    public partial struct EventCreateAndConnectElementsSystem : ISystem, ISystemStartStop
     {
         [BurstCompile]
         public void OnCreate(ref SystemState state)
@@ -20,6 +20,35 @@ namespace Systems
             state.RequireForUpdate<ConnectSphere>();
             state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
+        }
+
+        public void OnStartRunning(ref SystemState state)
+        {
+            var levelSettings = SystemAPI.GetSingletonRW<LevelSettingComponent>();
+            var querySphere = SystemAPI.QueryBuilder().WithAll<SphereComponent, IndexSharedComponent>().Build();
+
+            state.EntityManager.GetAllUniqueSharedComponents(out NativeList<IndexSharedComponent> indexes,
+                Allocator.Temp);
+
+            levelSettings.ValueRW.maxCountELements = 0;
+            
+            foreach (var index in indexes)
+            {
+                if (index.value == -1) continue;
+
+                querySphere.SetSharedComponentFilter(index);
+
+                var spheres = querySphere.ToComponentDataArray<SphereComponent>(Allocator.Temp);
+
+                if (spheres.Length != 0)
+                {
+                    levelSettings.ValueRW.maxCountELements += spheres[0].countElements;
+                }
+                
+                spheres.Dispose();
+            }
+
+            indexes.Dispose();
         }
 
         [BurstCompile]
@@ -42,6 +71,7 @@ namespace Systems
                 entityElementsNotConnected.Dispose();
                 return;
             }
+
             state.Dependency = new CreateJointElementsJob
             {
                 ecb = ecb,
@@ -69,7 +99,7 @@ namespace Systems
 
             private void Execute(Entity entity, in SphereComponent sphere, in IndexSharedComponent index)
             {
-                for (byte i = 0; i < sphere.countElements; i++)
+                for (byte i = 0; i < levelSettings.maxCountELements; i++)
                 {
                     var newElement = ecb.Instantiate(levelSettings.prefabElement);
                     ecb.SetName(newElement, "Element " + levelSettings.indexConnection + " (" + i + ")");
@@ -83,7 +113,7 @@ namespace Systems
                         Rotation = localTransforms[levelSettings.prefabElement].Rotation,
                         Scale = localTransforms[levelSettings.prefabElement].Scale
                     });
-                    ecb.AddSharedComponent(newElement, new IndexSharedComponent{value = index.value});
+                    ecb.AddSharedComponent(newElement, new IndexSharedComponent { value = index.value });
                 }
 
                 ecb.AddComponent<TagElementsCreated>(entity);
@@ -105,17 +135,18 @@ namespace Systems
 
                 for (var i = 0; i < elements.Length - 1; i++)
                 {
-                    StaticMethod.CreateJoint(ecb, elements[i], elements[i + 1], maxDistance, levelSettings.indexConnection);
+                    StaticMethod.CreateJoint(ecb, elements[i], elements[i + 1], maxDistance,
+                        levelSettings.indexConnection);
                 }
 
-                StaticMethod.CreateJoint(ecb, elements[^1], connectSphere.target, maxDistance, levelSettings.indexConnection);
+                StaticMethod.CreateJoint(ecb, elements[^1], connectSphere.target, maxDistance,
+                    levelSettings.indexConnection);
 
                 ecb.RemoveComponent<ConnectSphere>(entity);
                 ecb.RemoveComponent<TagElementsCreated>(entity);
             }
-            
         }
-        
+
         private partial struct IncrementIndexConnectionJob : IJobEntity
         {
             private void Execute(ref LevelSettingComponent levelSettings)
@@ -133,6 +164,10 @@ namespace Systems
             {
                 ecb.RemoveComponent<IsElementNotConnected>(sortKey, entity);
             }
+        }
+
+        public void OnStopRunning(ref SystemState state)
+        {
         }
     }
 }
