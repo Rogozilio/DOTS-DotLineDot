@@ -1,4 +1,5 @@
-﻿using Aspects;
+﻿using System.Linq;
+using Aspects;
 using Components;
 using Components.DynamicBuffers;
 using Components.Shared;
@@ -33,6 +34,7 @@ namespace Systems
             var merge = SystemAPI.GetSingletonRW<MergeSphereComponent>();
             var ecbSingleton = SystemAPI.GetSingleton<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+            var ecbParallel = ecb.AsParallelWriter();
 
             var bufferIndexConnectForRemove = SystemAPI.GetSingletonBuffer<IndexConnectionForRemoveBuffer>();
 
@@ -61,9 +63,16 @@ namespace Systems
                 buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
                 bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
-            state.Dependency = new RemoveConnectBetweenSphereJob
+            state.Dependency = new RemoveElementBetweenSphereJob
             {
-                ecb = ecb.AsParallelWriter(),
+                ecb = ecbParallel,
+                elementBuffer = SystemAPI.GetSingletonBuffer<PullElementBuffer>(),
+                bufferIndexForRemove = bufferIndexConnectForRemove
+            }.Schedule(state.Dependency);
+            state.Dependency = new RemoveJointBetweenSphereJob
+            {
+                ecb = ecbParallel,
+                jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
                 bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveIndexConnectInSphereJob
@@ -206,17 +215,40 @@ namespace Systems
         }
 
         [BurstCompile]
-        public partial struct RemoveConnectBetweenSphereJob : IJobEntity
+        [WithNone(typeof(PhysicsConstrainedBodyPair))]
+        public partial struct RemoveElementBetweenSphereJob : IJobEntity
         {
             public EntityCommandBuffer.ParallelWriter ecb;
             [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
+            public DynamicBuffer<PullElementBuffer> elementBuffer;
+
+            public void Execute(Entity entity, [EntityIndexInQuery] int sortKey, in LocalTransform transform,
+                in IndexConnectComponent indexConnect)
+            {
+                foreach (var index in bufferIndexForRemove)
+                {
+                    if (indexConnect.value != index.value) continue;
+
+                    StaticMethod.RemoveElement(ecb, sortKey, elementBuffer, entity, transform);
+                }
+            }
+        }
+
+        [BurstCompile]
+        [WithAll(typeof(PhysicsConstrainedBodyPair))]
+        public partial struct RemoveJointBetweenSphereJob : IJobEntity
+        {
+            public EntityCommandBuffer.ParallelWriter ecb;
+            [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
+            public DynamicBuffer<PullJointBuffer> jointBuffer;
 
             public void Execute(Entity entity, [EntityIndexInQuery] int sortKey, in IndexConnectComponent indexConnect)
             {
                 foreach (var index in bufferIndexForRemove)
                 {
-                    if (indexConnect.value == index.value)
-                        ecb.DestroyEntity(sortKey, entity);
+                    if (indexConnect.value != index.value) continue;
+
+                    StaticMethod.RemoveJoint(ecb, sortKey, jointBuffer, entity);
                 }
             }
         }
@@ -279,7 +311,7 @@ namespace Systems
 
             public void Execute(LevelSettingAspect levelSettingAspect)
             {
-                levelSettingAspect.AddSphereInBuffer(ecb, merge.ValueRO.from);
+                levelSettingAspect.AddSphereInPull(ecb, merge.ValueRO.from);
             }
         }
 

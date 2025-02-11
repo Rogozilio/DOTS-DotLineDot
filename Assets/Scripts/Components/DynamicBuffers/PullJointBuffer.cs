@@ -2,8 +2,8 @@
 
 namespace Components.DynamicBuffers
 {
-    [InternalBufferCapacity(128)]
-    public struct NotActiveSphereBuffer : IBufferElementData
+    [InternalBufferCapacity(256)]
+    public struct PullJointBuffer : IBufferElementData
     {
         public Entity value;
     }

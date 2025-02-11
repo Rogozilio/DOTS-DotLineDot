@@ -11,14 +11,14 @@ namespace Systems
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [UpdateBefore(typeof(EventCreateAndConnectElementsSystem))]
-    [UpdateAfter(typeof(InitNotActiveSphereSystem))]
+    [UpdateAfter(typeof(InitPullsSystem))]
     public partial struct SpawnSphereSystem : ISystem
     {
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<LevelSettingComponent>();
-            state.RequireForUpdate<NotActiveSphereBuffer>();
+            state.RequireForUpdate<PullSphereBuffer>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -27,7 +27,7 @@ namespace Systems
         {
             var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
-            var sphereBuffer = SystemAPI.GetSingletonBuffer<NotActiveSphereBuffer>();
+            var sphereBuffer = SystemAPI.GetSingletonBuffer<PullSphereBuffer>();
 
             state.Dependency = new SpawnSphereJob
             {
@@ -47,7 +47,7 @@ namespace Systems
         public partial struct SpawnSphereJob : IJobEntity
         {
             internal EntityCommandBuffer ecb;
-            public DynamicBuffer<NotActiveSphereBuffer> sphereBuffer;
+            public DynamicBuffer<PullSphereBuffer> sphereBuffer;
             [ReadOnly] public LevelSettingComponent levelSetting;
 
             public void Execute(Entity entity, ref SpawnSphereComponent spawnSphere, in LocalTransform transform)

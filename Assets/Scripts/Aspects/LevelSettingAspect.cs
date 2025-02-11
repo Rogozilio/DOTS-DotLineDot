@@ -1,4 +1,5 @@
-﻿using Components.DynamicBuffers;
+﻿using Components;
+using Components.DynamicBuffers;
 using Components.Shared;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -10,38 +11,57 @@ namespace Aspects
     {
         private readonly Entity _entity;
         private readonly RefRO<LevelSettingComponent> _levelSettingComponent;
-        private readonly DynamicBuffer<NotActiveSphereBuffer> _buffer;
-        public DynamicBuffer<NotActiveSphereBuffer> buffer => _buffer;
+        private readonly DynamicBuffer<PullSphereBuffer> _pullSphere;
+        private readonly DynamicBuffer<PullElementBuffer> _pullElement;
+        private readonly DynamicBuffer<PullJointBuffer> _pullJoint;
+        public DynamicBuffer<PullSphereBuffer> buffer => _pullSphere;
         public LevelSettingComponent level => _levelSettingComponent.ValueRO;
 
-        public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, bool isChangeName = false)
+        public void AddSphereInPull(EntityCommandBuffer ecb, Entity entity, bool isChangeName = false)
         {
-            AddSphereInBuffer(ecb, entity, _buffer.Length, isChangeName);
+            AddSphereInPull(ecb, entity, _pullSphere.Length, isChangeName);
         }
 
-        public int LengthBuffer => _buffer.Length;
-
-        public void AddSphereInBuffer(EntityCommandBuffer ecb, Entity entity, int indexBuffer, bool isChangeName = false)
+        public void AddSphereInPull(EntityCommandBuffer ecb, Entity entity, int index, bool isChangeName = false)
         {
             if(isChangeName)
-                ecb.SetName(entity, "Sphere" + indexBuffer);
+                ecb.SetName(entity, "Sphere" + index);
             
             ecb.SetComponent(entity, new LocalTransform()
             {
-                Position = new float3(1 + indexBuffer * 1.1f, -10, 1),
+                Position = new float3(1 + index * 1.1f, -10, 1),
                 Rotation = quaternion.identity,
                 Scale = 1f
             });
             ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
             ecb.SetBuffer<IndexConnectionBuffer>(entity); //Clear buffer
 
-            ecb.AppendToBuffer(_entity, new NotActiveSphereBuffer { value = entity });
+            ecb.AppendToBuffer(_entity, new PullSphereBuffer { value = entity });
+        }
+        
+        public void AddElementInPull(EntityCommandBuffer ecb, Entity entity, bool isChangeName = false)
+        {
+            if(isChangeName)
+                ecb.SetName(entity, "Element");
+            
+            ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
+            ecb.SetComponent(entity, new IndexConnectComponent{value = -1}); //Clear buffer
+            
+            ecb.AppendToBuffer(_entity, new PullElementBuffer { value = entity });
+        }
+        
+        public void AddJointInPull(EntityCommandBuffer ecb, Entity entity, bool isChangeName = false)
+        {
+            if(isChangeName)
+                ecb.SetName(entity, "Joint");
+            
+            ecb.AppendToBuffer(_entity, new PullJointBuffer { value = entity });
         }
 
         public Entity GetSphereFromBuffer()
         {
-            var entity = _buffer[^1].value;
-            buffer.RemoveAt(_buffer.Length - 1);
+            var entity = _pullSphere[^1].value;
+            buffer.RemoveAt(_pullSphere.Length - 1);
             return entity;
         }
     }

@@ -9,6 +9,7 @@ namespace Baker
     {
         [Header("Sphere")] 
         public int countSphere = 32;
+        public int countElement = 256;
         public float speedMoveSphere = 1f;
         public float speedGravityInSphere = 1f;
         [Header("Prefabs")]
@@ -22,6 +23,7 @@ namespace Baker
         {
             var entity = GetEntity(TransformUsageFlags.None);
             var levelSetting = new LevelSettingComponent();
+            levelSetting.countElement = authoring.countElement;
             levelSetting.countSphere = authoring.countSphere;
             levelSetting.prefabSphere = GetEntity(authoring.prefabSphere, TransformUsageFlags.Dynamic);
             levelSetting.prefabElement = GetEntity(authoring.prefabElement, TransformUsageFlags.Dynamic);
@@ -29,7 +31,9 @@ namespace Baker
             levelSetting.speedGravityInSphere = authoring.speedGravityInSphere;
             
             AddComponent(entity, levelSetting);
-            AddBuffer<NotActiveSphereBuffer>(entity);
+            AddBuffer<PullSphereBuffer>(entity);
+            AddBuffer<PullElementBuffer>(entity);
+            AddBuffer<PullJointBuffer>(entity);
         }
     }
 }

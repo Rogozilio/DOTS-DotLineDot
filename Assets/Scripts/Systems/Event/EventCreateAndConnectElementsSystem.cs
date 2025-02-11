@@ -1,5 +1,6 @@
 ﻿using Baker;
 using Components;
+using Components.DynamicBuffers;
 using Components.Shared;
 using Static;
 using Tags;
@@ -31,7 +32,7 @@ namespace Systems
                 Allocator.Temp);
 
             levelSettings.ValueRW.maxCountELements = 0;
-            
+
             foreach (var index in indexes)
             {
                 if (index.value == -1) continue;
@@ -44,7 +45,7 @@ namespace Systems
                 {
                     levelSettings.ValueRW.maxCountELements += spheres[0].countElements;
                 }
-                
+
                 spheres.Dispose();
             }
 
@@ -57,28 +58,25 @@ namespace Systems
             var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
             var levelSettings = SystemAPI.GetSingleton<LevelSettingComponent>();
-            var elementsNotConnected = SystemAPI.QueryBuilder().WithAll<IsElementNotConnected>().Build();
-            var entityElementsNotConnected = elementsNotConnected.ToEntityArray(Allocator.TempJob);
+            var elementsFromBuffer = new NativeArray<Entity>(levelSettings.maxCountELements, Allocator.TempJob);
 
             state.Dependency = new CreateElementsJob
             {
                 ecb = ecb,
+                elements = elementsFromBuffer,
                 levelSettings = levelSettings,
-                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
+                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                elementBuffer = SystemAPI.GetSingletonBuffer<PullElementBuffer>()
             }.Schedule(state.Dependency);
-            if (entityElementsNotConnected.Length == 0)
-            {
-                entityElementsNotConnected.Dispose();
-                return;
-            }
-
             state.Dependency = new CreateJointElementsJob
             {
                 ecb = ecb,
-                elements = entityElementsNotConnected,
+                elements = elementsFromBuffer,
                 localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
-                levelSettings = levelSettings
+                levelSettings = levelSettings,
+                jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>()
             }.Schedule(state.Dependency);
+
             state.Dependency.Complete();
             state.Dependency = new IncrementIndexConnectionJob().Schedule(state.Dependency);
             state.Dependency = new RemoveComponentIsElementNotConnectedJob()
@@ -86,7 +84,7 @@ namespace Systems
                 ecb = ecb.AsParallelWriter()
             }.ScheduleParallel(state.Dependency);
 
-            entityElementsNotConnected.Dispose();
+            elementsFromBuffer.Dispose();
         }
 
         [WithNone(typeof(TagElementsCreated))]
@@ -95,25 +93,24 @@ namespace Systems
         {
             internal EntityCommandBuffer ecb;
             public LevelSettingComponent levelSettings;
+            public NativeArray<Entity> elements;
             [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
+            public DynamicBuffer<PullElementBuffer> elementBuffer;
 
             private void Execute(Entity entity, in SphereComponent sphere, in IndexSharedComponent index)
             {
                 for (byte i = 0; i < levelSettings.maxCountELements; i++)
                 {
-                    var newElement = ecb.Instantiate(levelSettings.prefabElement);
-                    ecb.SetName(newElement, "Element " + levelSettings.indexConnection + " (" + i + ")");
-                    ecb.SetComponent(newElement, new IndexConnectComponent()
-                    {
-                        value = levelSettings.indexConnection
-                    });
-                    ecb.SetComponent(newElement, new LocalTransform()
+                    var newTransform = new LocalTransform
                     {
                         Position = localTransforms[entity].Position,
                         Rotation = localTransforms[levelSettings.prefabElement].Rotation,
                         Scale = localTransforms[levelSettings.prefabElement].Scale
-                    });
-                    ecb.AddSharedComponent(newElement, new IndexSharedComponent { value = index.value });
+                    };
+                    var name = "Element " + levelSettings.indexConnection + " (" + i + ")";
+                    var newElement = StaticMethod.CreateElement(ecb, elementBuffer, newTransform,
+                        levelSettings.indexConnection, index, name);
+                    elements[i] = newElement;
                 }
 
                 ecb.AddComponent<TagElementsCreated>(entity);
@@ -126,20 +123,22 @@ namespace Systems
             public NativeArray<Entity> elements;
             [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
             [ReadOnly] public LevelSettingComponent levelSettings;
+            public DynamicBuffer<PullJointBuffer> jointBuffer;
 
             private void Execute(Entity entity, in ConnectSphere connectSphere)
             {
                 var maxDistance = localTransforms[elements[0]].Scale / 1.5f;
 
-                StaticMethod.CreateJoint(ecb, entity, elements[0], maxDistance, levelSettings.indexConnection);
+                StaticMethod.SetJoint(ecb, jointBuffer, entity, elements[0], maxDistance,
+                    levelSettings.indexConnection);
 
                 for (var i = 0; i < elements.Length - 1; i++)
                 {
-                    StaticMethod.CreateJoint(ecb, elements[i], elements[i + 1], maxDistance,
-                        levelSettings.indexConnection);
+                    StaticMethod.SetJoint(ecb, jointBuffer, elements[i], elements[i + 1], maxDistance,
+                        levelSettings.indexConnection, "Joint " + i);
                 }
 
-                StaticMethod.CreateJoint(ecb, elements[^1], connectSphere.target, maxDistance,
+                StaticMethod.SetJoint(ecb, jointBuffer, elements[^1], connectSphere.target, maxDistance,
                     levelSettings.indexConnection);
 
                 ecb.RemoveComponent<ConnectSphere>(entity);

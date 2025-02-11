@@ -5,6 +5,7 @@ public struct LevelSettingComponent : IComponentData
 {
     public byte indexConnection;
     public int maxCountELements;
+    public int countElement;
     public int countSphere;
     public Entity prefabSphere;
     public Entity prefabElement;
