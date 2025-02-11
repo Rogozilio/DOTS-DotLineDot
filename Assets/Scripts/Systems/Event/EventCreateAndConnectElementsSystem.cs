@@ -76,18 +76,13 @@ namespace Systems
                 levelSettings = levelSettings,
                 jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>()
             }.Schedule(state.Dependency);
-
+            
             state.Dependency.Complete();
             state.Dependency = new IncrementIndexConnectionJob().Schedule(state.Dependency);
-            state.Dependency = new RemoveComponentIsElementNotConnectedJob()
-            {
-                ecb = ecb.AsParallelWriter()
-            }.ScheduleParallel(state.Dependency);
-
+            
             elementsFromBuffer.Dispose();
         }
 
-        [WithNone(typeof(TagElementsCreated))]
         [WithAll(typeof(ConnectSphere))]
         private partial struct CreateElementsJob : IJobEntity
         {
@@ -108,12 +103,9 @@ namespace Systems
                         Scale = localTransforms[levelSettings.prefabElement].Scale
                     };
                     var name = "Element " + levelSettings.indexConnection + " (" + i + ")";
-                    var newElement = StaticMethod.CreateElement(ecb, elementBuffer, newTransform,
-                        levelSettings.indexConnection, index, name);
+                    var newElement = StaticMethod.CreateElement(ecb, elementBuffer, newTransform, levelSettings.indexConnection, index, name);
                     elements[i] = newElement;
                 }
-
-                ecb.AddComponent<TagElementsCreated>(entity);
             }
         }
 
@@ -142,7 +134,6 @@ namespace Systems
                     levelSettings.indexConnection);
 
                 ecb.RemoveComponent<ConnectSphere>(entity);
-                ecb.RemoveComponent<TagElementsCreated>(entity);
             }
         }
 
@@ -151,17 +142,6 @@ namespace Systems
             private void Execute(ref LevelSettingComponent levelSettings)
             {
                 levelSettings.indexConnection++;
-            }
-        }
-
-        private partial struct RemoveComponentIsElementNotConnectedJob : IJobEntity
-        {
-            internal EntityCommandBuffer.ParallelWriter ecb;
-
-            private void Execute(Entity entity, [ChunkIndexInQuery] int sortKey,
-                in IsElementNotConnected isElementNotConnected)
-            {
-                ecb.RemoveComponent<IsElementNotConnected>(sortKey, entity);
             }
         }
 
