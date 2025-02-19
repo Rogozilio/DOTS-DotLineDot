@@ -1,0 +1,94 @@
+﻿using Components;
+using Components.DynamicBuffers;
+using Components.Shared;
+using Static;
+using Tags;
+using Unity.Burst;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Transforms;
+using UnityEngine;
+
+namespace Systems
+{
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateAfter(typeof(DuplicateSpheresSystem))]
+    public partial struct DynamicSpawnElementSystem : ISystem
+    {
+        public void OnCreate(ref SystemState state)
+        {
+            state.RequireForUpdate<IsMouseMove>();
+            state.RequireForUpdate<LevelSettingComponent>();
+            state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
+        }
+
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
+            var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+
+            var spheresMoveMouse =
+                SystemAPI.QueryBuilder()
+                    .WithAll<IsMouseMove>()
+                    .WithDisabled<IsBlockedSphere>()
+                    .Build().ToEntityArray(Allocator.TempJob);
+            state.Dependency = new SpawnElementJob
+            {
+                ecb = ecb,
+                spheres = spheresMoveMouse,
+                joints = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
+                elements = SystemAPI.GetSingletonBuffer<PullElementBuffer>(),
+                levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>(),
+                transforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                indexes = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
+            }.Schedule(state.Dependency);
+            state.Dependency = spheresMoveMouse.Dispose(state.Dependency);
+        }
+
+        [BurstCompile]
+        public partial struct SpawnElementJob : IJobEntity
+        {
+            public EntityCommandBuffer ecb;
+            public NativeArray<Entity> spheres;
+            public DynamicBuffer<PullJointBuffer> joints;
+            public DynamicBuffer<PullElementBuffer> elements;
+            public LevelSettingComponent levelSetting;
+            [ReadOnly] public ComponentLookup<LocalTransform> transforms;
+            [ReadOnly] public ComponentLookup<IndexConnectComponent> indexes;
+
+            public void Execute(Entity entity, PhysicsConstrainedBodyPair bodyPair)
+            {
+                foreach (var sphere in spheres)
+                {
+                    if (bodyPair.EntityA != sphere && bodyPair.EntityB != sphere) return;
+
+                    var distance = math.distance(transforms[bodyPair.EntityA].Position,
+                        transforms[bodyPair.EntityB].Position);
+
+                    if (distance > levelSetting.distanceSpawn)
+                    {
+                        Debug.Log(levelSetting.indexShared);
+                        var element = bodyPair.EntityA != sphere ? bodyPair.EntityA : bodyPair.EntityB;
+                        StaticMethod.RemoveJoint(ecb, joints, entity);
+                        var transform = transforms[sphere];
+                        transform.Scale = transforms[levelSetting.prefabElement].Scale;
+                        var newElement = StaticMethod.CreateElement(ecb, elements, transform,
+                            indexes[entity].value,
+                            new IndexSharedComponent { value = levelSetting.indexShared }, "ElementNew");
+                        StaticMethod.SetJoint(ecb, joints, element, newElement, levelSetting.distanceBetweenElements,
+                            indexes[entity].value);
+                        StaticMethod.SetJoint(ecb, joints, newElement, sphere, levelSetting.distanceBetweenElements,
+                            indexes[entity].value);
+
+                        ecb.AddComponent(newElement, new SkipFrameComponent { count = 5 });
+
+                        //Debug.Log("123");
+                    }
+                }
+            }
+        }
+    }
+}

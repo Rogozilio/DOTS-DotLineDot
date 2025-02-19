@@ -47,8 +47,7 @@ namespace Static
         }
 
         public static void SetJoint(EntityCommandBuffer ecb, DynamicBuffer<PullJointBuffer> joints, Entity a, Entity b,
-            float maxDistanceRange,
-            int indexConnection, string name = "JointElement")
+            float maxDistanceRange, int indexConnection, string name = "JointElement")
         {
             var newEntity = joints[^1].value;
 
@@ -61,6 +60,26 @@ namespace Static
             ecb.SetComponent(newEntity, limitedDistance);
             ecb.SetComponent(newEntity, new IndexConnectComponent { value = indexConnection });
             ecb.SetSharedComponent(newEntity, new PhysicsWorldIndex());
+
+            joints.RemoveAt(joints.Length != 0 ? joints.Length - 1 : 0);
+        }
+
+        public static void SetJoint(EntityCommandBuffer.ParallelWriter ecb, int sortKey,
+            DynamicBuffer<PullJointBuffer> joints, Entity a, Entity b,
+            float maxDistanceRange,
+            int indexConnection, string name = "JointElement")
+        {
+            var newEntity = joints[^1].value;
+
+            var bodyPair = new PhysicsConstrainedBodyPair(a, b, false);
+            var limitedDistance =
+                PhysicsJoint.CreateLimitedDistance(float3.zero, float3.zero, new Math.FloatRange(0, maxDistanceRange));
+
+            ecb.SetName(sortKey, newEntity, name);
+            ecb.SetComponent(sortKey, newEntity, bodyPair);
+            ecb.SetComponent(sortKey, newEntity, limitedDistance);
+            ecb.SetComponent(sortKey, newEntity, new IndexConnectComponent { value = indexConnection });
+            ecb.SetSharedComponent(sortKey, newEntity, new PhysicsWorldIndex());
 
             joints.RemoveAt(joints.Length != 0 ? joints.Length - 1 : 0);
         }
@@ -80,9 +99,9 @@ namespace Static
             ecb.SetComponent(entity, new IndexConnectComponent { value = -1 });
             ecb.SetSharedComponent(entity, new PhysicsWorldIndex());
         }
-        
-        public static void RemoveJoint(EntityCommandBuffer.ParallelWriter ecb, int sortKey, DynamicBuffer<PullJointBuffer> joints, Entity entity,
-            string name = "JointElement")
+
+        public static void RemoveJoint(EntityCommandBuffer.ParallelWriter ecb, int sortKey,
+            DynamicBuffer<PullJointBuffer> joints, Entity entity, string name = "JointElement")
         {
             joints.Add(new PullJointBuffer { value = entity });
 
@@ -98,8 +117,7 @@ namespace Static
         }
 
         public static Entity CreateElement(EntityCommandBuffer ecb, DynamicBuffer<PullElementBuffer> elementBuffers,
-            LocalTransform transform, int
-                indexConnection, IndexSharedComponent index, string name = "Element")
+            LocalTransform transform, int indexConnection, IndexSharedComponent index, string name = "Element")
         {
             var newElement = elementBuffers[^1].value;
             ecb.SetName(newElement, name);
@@ -122,8 +140,10 @@ namespace Static
             ecb.SetName(entity, name);
             transform.Position = new float3(0, -15, 0);
             ecb.SetComponent(entity, transform);
+            ecb.SetComponent(entity, new PhysicsVelocity()); //Clear PhysicsVelocity
+            ecb.SetComponent(entity, new TargetGravityComponent()); //Clear TargetGravityComponent
             ecb.SetComponent(entity, new IndexConnectComponent { value = -1 });
-            ecb.SetSharedComponent(entity, new IndexSharedComponent() { value = -1 });
+            ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
         }
 
         public static void RemoveElement(EntityCommandBuffer.ParallelWriter ecb, int sortKey,
@@ -135,8 +155,10 @@ namespace Static
             ecb.SetName(sortKey, entity, name);
             transform.Position = new float3(0, -15, 0);
             ecb.SetComponent(sortKey, entity, transform);
+            ecb.SetComponent(sortKey, entity, new PhysicsVelocity()); //Clear PhysicsVelocity
+            ecb.SetComponent(sortKey, entity, new TargetGravityComponent()); //Clear TargetGravityComponent
             ecb.SetComponent(sortKey, entity, new IndexConnectComponent { value = -1 });
-            ecb.SetSharedComponent(sortKey, entity, new IndexSharedComponent() { value = -1 });
+            ecb.SetSharedComponent(sortKey, entity, new IndexSharedComponent { value = -1 });
         }
     }
 }

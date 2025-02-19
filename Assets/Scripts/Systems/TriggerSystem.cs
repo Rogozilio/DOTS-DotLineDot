@@ -4,6 +4,7 @@ using Tags;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 
@@ -82,7 +83,10 @@ namespace Systems
                 if (!isEqualsIndex) return;
 
                 var newTarget = new TargetGravityComponent
-                    { target = sphere, position = localToWorld[sphere].Position };
+                {
+                    target = sphere, position = localToWorld[sphere].Position,
+                    distance = math.distance(localToWorld[sphere].Position, localToWorld[element].Position)
+                };
                 targetGravityComponent[element] = newTarget;
                 targetGravityComponent.SetComponentEnabled(element, true);
             }
@@ -99,7 +103,7 @@ namespace Systems
 
                 if (Entity.Null.Equals(sphere1) || Entity.Null.Equals(sphere2))
                     return;
-                
+
                 isCollisionWithSpheres.SetComponentEnabled(sphere1, true);
                 isCollisionWithSpheres.SetComponentEnabled(sphere2, true);
             }

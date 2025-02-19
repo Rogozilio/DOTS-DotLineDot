@@ -10,7 +10,7 @@ using Unity.Transforms;
 namespace Systems
 {
     [UpdateInGroup(typeof(InitializationSystemGroup))]
-    [UpdateBefore(typeof(EventCreateAndConnectElementsSystem))]
+    [UpdateBefore(typeof(DuplicateSpheresSystem))]
     [UpdateAfter(typeof(InitPullsSystem))]
     public partial struct SpawnSphereSystem : ISystem
     {

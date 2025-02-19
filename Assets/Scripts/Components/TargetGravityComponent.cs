@@ -7,5 +7,6 @@ namespace Components
     {
         public Entity target;
         public float3 position;
+        public float distance;
     }
 }

@@ -8,13 +8,15 @@ namespace Aspects
 {
     public readonly partial struct ElementAspect : IAspect
     {
-        private readonly Entity _entity;
+        public readonly Entity entity;
 
         private readonly RefRO<LocalToWorld> _localToWorld;
         private readonly RefRW<PhysicsVelocity> _physicsVelocity;
         private readonly RefRW<TargetGravityComponent> _targetGravityComponent;
 
         private readonly EnabledRefRW<TargetGravityComponent> _enabledTargetGravityComponent;
+
+        public readonly RefRW<LocalTransform> transform;
 
         public bool EnableTargetGravity
         {
@@ -41,5 +43,8 @@ namespace Aspects
 
         public float DistanceToTargetGravity =>
             math.distance(_localToWorld.ValueRO.Position, _targetGravityComponent.ValueRO.position);
+        
+        public float DistanceToVelocityPoint =>
+            math.distance(_localToWorld.ValueRO.Position, _localToWorld.ValueRO.Position + LinearVelocity);
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Aspects;
 using Components;
 using Components.DynamicBuffers;
+using Static;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
@@ -29,6 +30,7 @@ namespace Systems
             state.Dependency = new GravityInSphereJob
             {
                 speed = data.speedGravityInSphere,
+                isMoveMouse = SystemAPI.GetComponentLookup<IsMouseMove>(true)
             }.Schedule(state.Dependency);
         }
 
@@ -36,12 +38,16 @@ namespace Systems
         [WithAll(typeof(TargetGravityComponent))]
         private partial struct GravityInSphereJob : IJobEntity
         {
+            public EntityCommandBuffer ecb;
             public float speed;
+            [ReadOnly] public ComponentLookup<IsMouseMove> isMoveMouse;
 
             private void Execute(ElementAspect element)
             {
                 if(element.TargetGravity.target == Entity.Null) return;
                 
+                if(!isMoveMouse.IsComponentEnabled(element.TargetGravity.target)) return;
+                //Debug.Log(element.TargetGravity.distance);
                 element.LinearVelocity = element.ToTargetGravity * speed;
                 element.EnableTargetGravity = false;
             }

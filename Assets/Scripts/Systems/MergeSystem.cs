@@ -25,6 +25,7 @@ namespace Systems
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<MergeSphereComponent>();
+            state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -37,6 +38,7 @@ namespace Systems
             var ecbParallel = ecb.AsParallelWriter();
 
             var bufferIndexConnectForRemove = SystemAPI.GetSingletonBuffer<IndexConnectionForRemoveBuffer>();
+            var jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>();
 
             bufferIndexConnectForRemove.Clear();
 
@@ -72,7 +74,7 @@ namespace Systems
             state.Dependency = new RemoveJointBetweenSphereJob
             {
                 ecb = ecbParallel,
-                jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
+                jointBuffer = jointBuffer,
                 bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveIndexConnectInSphereJob
@@ -83,9 +85,10 @@ namespace Systems
             {
                 merge = merge,
                 ecb = ecb,
-                localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>(),
                 buffers = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(),
-                bufferIndexForRemove = bufferIndexConnectForRemove
+                bufferIndexForRemove = bufferIndexConnectForRemove,
+                joints = jointBuffer
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveSphereJob
             {
@@ -277,8 +280,9 @@ namespace Systems
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
 
             public EntityCommandBuffer ecb;
-            [ReadOnly] public ComponentLookup<LocalTransform> localTransforms;
             public BufferLookup<IndexConnectionBuffer> buffers;
+            public LevelSettingComponent levelSetting;
+            public DynamicBuffer<PullJointBuffer> joints;
             [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
 
             public void Execute(Entity entity, in PhysicsConstrainedBodyPair bodyPair,
@@ -295,7 +299,7 @@ namespace Systems
 
                 ecb.DestroyEntity(entity);
 
-                StaticMethod.CreateJoint(ecb, merge.ValueRO.to, element, localTransforms[element].Scale / 1.5f,
+                StaticMethod.SetJoint(ecb, joints,merge.ValueRO.to, element, levelSetting.distanceBetweenElements,
                     indexConnect.value);
 
                 buffers[merge.ValueRO.to].Add(new IndexConnectionBuffer { value = indexConnect.value });
