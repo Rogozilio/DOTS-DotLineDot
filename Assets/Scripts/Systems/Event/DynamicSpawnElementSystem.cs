@@ -70,7 +70,6 @@ namespace Systems
 
                     if (distance > levelSetting.distanceSpawn)
                     {
-                        Debug.Log(levelSetting.indexShared);
                         var element = bodyPair.EntityA != sphere ? bodyPair.EntityA : bodyPair.EntityB;
                         StaticMethod.RemoveJoint(ecb, joints, entity);
                         var transform = transforms[sphere];
@@ -85,7 +84,7 @@ namespace Systems
 
                         ecb.AddComponent(newElement, new SkipFrameComponent { count = 5 });
 
-                        //Debug.Log("123");
+                        Debug.Log("123");
                     }
                 }
             }

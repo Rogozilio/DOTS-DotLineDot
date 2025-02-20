@@ -122,7 +122,6 @@ namespace Systems
                 StaticMethod.RemoveJoint(ecb, joints, removeElement.ValueRO.joint2);
                 StaticMethod.RemoveElement(ecb, elements, removeElement.ValueRO.element,
                     transforms[removeElement.ValueRO.element]);
-                //TODO: maxDistance replace
                 StaticMethod.SetJoint(ecb, joints, removeElement.ValueRO.connect1, removeElement.ValueRO.connect2,
                     levelSetting.distanceBetweenElements, indexes[removeElement.ValueRO.element].value);
                 // Debug.LogWarning("Element " + removeElement.ValueRO.element +

@@ -10,13 +10,24 @@ namespace Aspects
     public readonly partial struct LevelSettingAspect : IAspect
     {
         private readonly Entity _entity;
-        private readonly RefRO<LevelSettingComponent> _levelSettingComponent;
+        private readonly RefRW<LevelSettingComponent> _levelSettingComponent;
         private readonly DynamicBuffer<PullSphereBuffer> _pullSphere;
         private readonly DynamicBuffer<PullElementBuffer> _pullElement;
         private readonly DynamicBuffer<PullJointBuffer> _pullJoint;
         public DynamicBuffer<PullSphereBuffer> buffer => _pullSphere;
         public LevelSettingComponent level => _levelSettingComponent.ValueRO;
 
+        public void IncrementIndexConnect()
+        {
+            _levelSettingComponent.ValueRW.indexConnection++;
+        }
+        
+        public void IncrementIndexConnect(EntityCommandBuffer ecb, Entity entity)
+        {
+            _levelSettingComponent.ValueRW.indexConnection++;
+            ecb.SetComponent(entity, _levelSettingComponent.ValueRO);
+        }
+        
         public void AddSphereInPull(EntityCommandBuffer ecb, Entity entity, bool isChangeName = false)
         {
             AddSphereInPull(ecb, entity, _pullSphere.Length, isChangeName);

@@ -1,4 +1,5 @@
-﻿using Baker;
+﻿using Aspects;
+using Baker;
 using Components;
 using Components.DynamicBuffers;
 using Components.Shared;
@@ -31,21 +32,26 @@ namespace Systems
         {
             var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+            var entityLevelSettings = SystemAPI.GetSingletonEntity<LevelSettingComponent>();
             
             state.Dependency = new CreateJointElementsJob
             {
                 ecb = ecb,
-                levelSettings = SystemAPI.GetSingleton<LevelSettingComponent>(),
-                entityLevelSettings = SystemAPI.GetSingletonEntity<LevelSettingComponent>(),
                 jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
+                levelSettings = SystemAPI.GetSingleton<LevelSettingComponent>(),
+                entityLevelSettings = entityLevelSettings,
             }.Schedule(state.Dependency);
-            state.Dependency = new IncrementIndexConnectionJob().Schedule(state.Dependency);
+            state.Dependency = new IncrementIndexConnectionJob
+            {
+                ecb = ecb,
+                entityLevelSettings = entityLevelSettings
+            }.Schedule(state.Dependency);
         }
 
         [BurstCompile]
         private partial struct CreateJointElementsJob : IJobEntity
         {
-            internal EntityCommandBuffer ecb;
+            public EntityCommandBuffer ecb;
             public DynamicBuffer<PullJointBuffer> jointBuffer;
             public LevelSettingComponent levelSettings;
             public Entity entityLevelSettings;
@@ -54,7 +60,7 @@ namespace Systems
             {
                 StaticMethod.SetJoint(ecb, jointBuffer, entity, connectSphere.target,
                     levelSettings.distanceBetweenElements, levelSettings.indexConnection);
-
+                Debug.Log(levelSettings.indexConnection);
                 levelSettings.indexShared = (byte)indexShared.value;
                 ecb.SetComponent(entityLevelSettings, levelSettings);
                 ecb.RemoveComponent<ConnectSphere>(entity);
@@ -63,9 +69,11 @@ namespace Systems
 
         private partial struct IncrementIndexConnectionJob : IJobEntity
         {
-            private void Execute(ref LevelSettingComponent levelSettings)
+            public EntityCommandBuffer ecb;
+            public Entity entityLevelSettings;
+            private void Execute(LevelSettingAspect levelSettingsAspect)
             {
-                levelSettings.indexConnection++;
+                levelSettingsAspect.IncrementIndexConnect(ecb, entityLevelSettings);
             }
         }
     }

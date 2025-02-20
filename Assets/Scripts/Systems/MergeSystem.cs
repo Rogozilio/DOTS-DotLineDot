@@ -116,6 +116,10 @@ namespace Systems
                     sumCountElements = spheres[merge.ValueRO.from].countElements +
                                        spheres[merge.ValueRO.to].countElements
                 }.Schedule(state.Dependency);
+                state.Dependency = new SetIndexSharedInLevelSettingJob
+                {
+                    newIndex = newIndex
+                }.Schedule(state.Dependency);
             }
 
             state.Dependency = new ClearMergeComponentJob
@@ -331,6 +335,16 @@ namespace Systems
                 if (index.value != oldIndex) return;
 
                 ecb.SetSharedComponent(entity, new IndexSharedComponent { value = newIndex });
+            }
+        }
+
+        [BurstCompile]
+        public partial struct SetIndexSharedInLevelSettingJob : IJobEntity
+        {
+            [ReadOnly] public int newIndex;
+            public void Execute(ref LevelSettingComponent levelSetting)
+            {
+                levelSetting.indexShared = (byte)newIndex;
             }
         }
 
