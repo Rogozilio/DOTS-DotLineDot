@@ -60,7 +60,6 @@ namespace Systems
             {
                 StaticMethod.SetJoint(ecb, jointBuffer, entity, connectSphere.target,
                     levelSettings.distanceBetweenElements, levelSettings.indexConnection);
-                Debug.Log(levelSettings.indexConnection);
                 levelSettings.indexShared = (byte)indexShared.value;
                 ecb.SetComponent(entityLevelSettings, levelSettings);
                 ecb.RemoveComponent<ConnectSphere>(entity);

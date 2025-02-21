@@ -47,6 +47,7 @@ namespace Systems
                 float distance = math.length(direction);
                 
                 velocity.Linear = math.normalizesafe(direction) * math.min(speed, speed * distance);
+                velocity.Angular = float3.zero;
             }
         }
     }

@@ -25,9 +25,10 @@ namespace Systems
             var simulationSingleton = SystemAPI.GetSingleton<SimulationSingleton>();
             state.Dependency = new TriggerEvent
             {
-                sphereComponent = SystemAPI.GetComponentLookup<SphereComponent>(true),
-                targetGravityComponent = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
-                localToWorld = SystemAPI.GetComponentLookup<LocalToWorld>(true),
+                spheres = SystemAPI.GetComponentLookup<SphereComponent>(true),
+                finishes = SystemAPI.GetComponentLookup<FinishComponent>(),
+                targetsGravity = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
+                localToWorlds = SystemAPI.GetComponentLookup<LocalToWorld>(true),
                 indexesBuffer = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
                 indexesElement = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
                 isCollisionWithSpheres = SystemAPI.GetComponentLookup<IsCollisionWithSphere>(),
@@ -37,9 +38,10 @@ namespace Systems
         [BurstCompile]
         struct TriggerEvent : ITriggerEventsJob
         {
-            [ReadOnly] public ComponentLookup<SphereComponent> sphereComponent;
-            public ComponentLookup<TargetGravityComponent> targetGravityComponent;
-            [ReadOnly] public ComponentLookup<LocalToWorld> localToWorld;
+            [ReadOnly] public ComponentLookup<SphereComponent> spheres;
+            public ComponentLookup<FinishComponent> finishes;
+            public ComponentLookup<TargetGravityComponent> targetsGravity;
+            [ReadOnly] public ComponentLookup<LocalToWorld> localToWorlds;
 
             [ReadOnly] public BufferLookup<IndexConnectionBuffer> indexesBuffer;
             [ReadOnly] public ComponentLookup<IndexConnectComponent> indexesElement;
@@ -50,6 +52,7 @@ namespace Systems
             {
                 CollisionSphereWithElement(triggerEvent);
                 CollisionSphereWithSphere(triggerEvent);
+                CollisionSphereWithFinish(triggerEvent);
             }
 
             private void CollisionSphereWithElement(Unity.Physics.TriggerEvent triggerEvent)
@@ -57,13 +60,13 @@ namespace Systems
                 var sphere = Entity.Null;
                 var element = Entity.Null;
 
-                if (sphereComponent.HasComponent(triggerEvent.EntityA))
+                if (spheres.HasComponent(triggerEvent.EntityA))
                     sphere = triggerEvent.EntityA;
-                if (sphereComponent.HasComponent(triggerEvent.EntityB))
+                if (spheres.HasComponent(triggerEvent.EntityB))
                     sphere = triggerEvent.EntityB;
-                if (targetGravityComponent.HasComponent(triggerEvent.EntityA))
+                if (targetsGravity.HasComponent(triggerEvent.EntityA))
                     element = triggerEvent.EntityA;
-                if (targetGravityComponent.HasComponent(triggerEvent.EntityB))
+                if (targetsGravity.HasComponent(triggerEvent.EntityB))
                     element = triggerEvent.EntityB;
 
                 if (Entity.Null.Equals(sphere) || Entity.Null.Equals(element))
@@ -84,11 +87,11 @@ namespace Systems
 
                 var newTarget = new TargetGravityComponent
                 {
-                    target = sphere, position = localToWorld[sphere].Position,
-                    distance = math.distance(localToWorld[sphere].Position, localToWorld[element].Position)
+                    target = sphere, position = localToWorlds[sphere].Position,
+                    distance = math.distance(localToWorlds[sphere].Position, localToWorlds[element].Position)
                 };
-                targetGravityComponent[element] = newTarget;
-                targetGravityComponent.SetComponentEnabled(element, true);
+                targetsGravity[element] = newTarget;
+                targetsGravity.SetComponentEnabled(element, true);
             }
 
             private void CollisionSphereWithSphere(Unity.Physics.TriggerEvent triggerEvent)
@@ -96,9 +99,9 @@ namespace Systems
                 var sphere1 = Entity.Null;
                 var sphere2 = Entity.Null;
 
-                if (sphereComponent.HasComponent(triggerEvent.EntityA))
+                if (spheres.HasComponent(triggerEvent.EntityA))
                     sphere1 = triggerEvent.EntityA;
-                if (sphereComponent.HasComponent(triggerEvent.EntityB))
+                if (spheres.HasComponent(triggerEvent.EntityB))
                     sphere2 = triggerEvent.EntityB;
 
                 if (Entity.Null.Equals(sphere1) || Entity.Null.Equals(sphere2))
@@ -106,6 +109,28 @@ namespace Systems
 
                 isCollisionWithSpheres.SetComponentEnabled(sphere1, true);
                 isCollisionWithSpheres.SetComponentEnabled(sphere2, true);
+            }
+            
+            private void CollisionSphereWithFinish(Unity.Physics.TriggerEvent triggerEvent)
+            {
+                var sphere = Entity.Null;
+                var finish = Entity.Null;
+
+                if (spheres.HasComponent(triggerEvent.EntityA))
+                    sphere = triggerEvent.EntityA;
+                if (spheres.HasComponent(triggerEvent.EntityB))
+                    sphere = triggerEvent.EntityB;
+                if (finishes.HasComponent(triggerEvent.EntityA))
+                    finish = triggerEvent.EntityA;
+                if (finishes.HasComponent(triggerEvent.EntityB))
+                    finish = triggerEvent.EntityB;
+
+                if (Entity.Null.Equals(sphere) || Entity.Null.Equals(finish))
+                    return;
+
+                var finishComponent = finishes[finish];
+                finishComponent.sphere = sphere;
+                finishes[finish] = finishComponent;
             }
         }
     }
