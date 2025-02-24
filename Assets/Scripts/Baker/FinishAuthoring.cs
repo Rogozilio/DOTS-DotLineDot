@@ -13,6 +13,7 @@ namespace Baker
                 var entity = GetEntity(TransformUsageFlags.WorldSpace);
                 
                 AddComponent<FinishComponent>(entity);
+                SetComponentEnabled<FinishComponent>(entity, false);
             }
         }
     }

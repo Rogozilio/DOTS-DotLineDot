@@ -7,6 +7,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace Systems
 {
@@ -127,7 +128,7 @@ namespace Systems
 
                 if (Entity.Null.Equals(sphere) || Entity.Null.Equals(finish))
                     return;
-
+                
                 var finishComponent = finishes[finish];
                 finishComponent.sphere = sphere;
                 finishes[finish] = finishComponent;

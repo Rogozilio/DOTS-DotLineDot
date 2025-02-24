@@ -2,9 +2,8 @@
 
 namespace Components
 {
-    public struct FinishComponent : IComponentData
+    public struct FinishComponent : IComponentData, IEnableableComponent
     {
         public Entity sphere;
-        public bool isFinished;
     }
 }
