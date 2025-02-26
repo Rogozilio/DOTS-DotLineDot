@@ -20,6 +20,7 @@ namespace Systems
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<IsMouseMove>();
+            state.RequireForUpdate<PullElementBuffer>();
             state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
         }
@@ -41,6 +42,7 @@ namespace Systems
                 spheres = spheresMoveMouse,
                 joints = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
                 elements = SystemAPI.GetSingletonBuffer<PullElementBuffer>(),
+                entityPull = SystemAPI.GetSingletonEntity<PullElementBuffer>(),
                 levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>(),
                 transforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
                 indexes = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
@@ -55,6 +57,7 @@ namespace Systems
             public NativeArray<Entity> spheres;
             public DynamicBuffer<PullJointBuffer> joints;
             public DynamicBuffer<PullElementBuffer> elements;
+            public Entity entityPull;
             public LevelSettingComponent levelSetting;
             [ReadOnly] public ComponentLookup<LocalTransform> transforms;
             [ReadOnly] public ComponentLookup<IndexConnectComponent> indexes;
@@ -71,20 +74,20 @@ namespace Systems
                     if (distance > levelSetting.distanceSpawn)
                     {
                         var element = bodyPair.EntityA != sphere ? bodyPair.EntityA : bodyPair.EntityB;
-                        StaticMethod.RemoveJoint(ecb, joints, entity);
+                        StaticMethod.RemoveJoint(ecb, entityPull, entity);
                         var transform = transforms[sphere];
                         transform.Scale = transforms[levelSetting.prefabElement].Scale;
-                        var newElement = StaticMethod.CreateElement(ecb, elements, transform,
+                        var newElement = StaticMethod.UseElement(ecb, elements, transform,
                             indexes[entity].value,
                             new IndexSharedComponent { value = levelSetting.indexShared }, "ElementNew");
-                        StaticMethod.SetJoint(ecb, joints, element, newElement, levelSetting.distanceBetweenElements,
+                        StaticMethod.UseJoint(ecb, joints, element, newElement, levelSetting.distanceBetweenElements,
                             indexes[entity].value);
-                        StaticMethod.SetJoint(ecb, joints, newElement, sphere, levelSetting.distanceBetweenElements,
+                        StaticMethod.UseJoint(ecb, joints, newElement, sphere, levelSetting.distanceBetweenElements,
                             indexes[entity].value);
 
                         ecb.AddComponent(newElement, new SkipFrameComponent { count = 5 });
 
-                        Debug.Log("123");
+                        //Debug.Log("123");
                     }
                 }
             }

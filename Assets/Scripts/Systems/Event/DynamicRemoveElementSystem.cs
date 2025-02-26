@@ -19,6 +19,7 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<PullSphereBuffer>();
             state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<RemoveElementComponent>();
             state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
@@ -45,7 +46,7 @@ namespace Systems
                 ecb = ecb,
                 removeElement = removeElement,
                 joints = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
-                elements = SystemAPI.GetSingletonBuffer<PullElementBuffer>(),
+                entityPull = SystemAPI.GetSingletonEntity<PullSphereBuffer>(),
                 levelSetting = SystemAPI.GetSingleton<LevelSettingComponent>(),
                 transforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
                 indexes = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
@@ -105,7 +106,7 @@ namespace Systems
             public EntityCommandBuffer ecb;
             [NativeDisableUnsafePtrRestriction] public RefRW<RemoveElementComponent> removeElement;
             public DynamicBuffer<PullJointBuffer> joints;
-            public DynamicBuffer<PullElementBuffer> elements;
+            public Entity entityPull;
             public LevelSettingComponent levelSetting;
             [ReadOnly] public ComponentLookup<LocalTransform> transforms;
             [ReadOnly] public ComponentLookup<IndexConnectComponent> indexes;
@@ -118,11 +119,11 @@ namespace Systems
                     || removeElement.ValueRO.connect1 == Entity.Null
                     || removeElement.ValueRO.connect2 == Entity.Null) return;
 
-                StaticMethod.RemoveJoint(ecb, joints, removeElement.ValueRO.joint1);
-                StaticMethod.RemoveJoint(ecb, joints, removeElement.ValueRO.joint2);
-                StaticMethod.RemoveElement(ecb, elements, removeElement.ValueRO.element,
+                StaticMethod.RemoveJoint(ecb, entityPull, removeElement.ValueRO.joint1);
+                StaticMethod.RemoveJoint(ecb, entityPull, removeElement.ValueRO.joint2);
+                StaticMethod.RemoveElement(ecb, entityPull, removeElement.ValueRO.element,
                     transforms[removeElement.ValueRO.element]);
-                StaticMethod.SetJoint(ecb, joints, removeElement.ValueRO.connect1, removeElement.ValueRO.connect2,
+                StaticMethod.UseJoint(ecb, joints, removeElement.ValueRO.connect1, removeElement.ValueRO.connect2,
                     levelSetting.distanceBetweenElements, indexes[removeElement.ValueRO.element].value);
                 // Debug.LogWarning("Element " + removeElement.ValueRO.element +
                 //                  " joint1 " + removeElement.ValueRO.joint1 +

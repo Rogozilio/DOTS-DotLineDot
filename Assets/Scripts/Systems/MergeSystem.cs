@@ -1,6 +1,4 @@
-﻿using System.Linq;
-using Aspects;
-using Components;
+﻿using Components;
 using Components.DynamicBuffers;
 using Components.Shared;
 using Static;
@@ -14,7 +12,6 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems
 {
@@ -24,6 +21,7 @@ namespace Systems
     {
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<PullJointBuffer>();
             state.RequireForUpdate<MergeSphereComponent>();
             state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
@@ -39,6 +37,7 @@ namespace Systems
 
             var bufferIndexConnectForRemove = SystemAPI.GetSingletonBuffer<IndexConnectionForRemoveBuffer>();
             var jointBuffer = SystemAPI.GetSingletonBuffer<PullJointBuffer>();
+            var entityPull = SystemAPI.GetSingletonEntity<PullJointBuffer>();
 
             bufferIndexConnectForRemove.Clear();
 
@@ -68,13 +67,13 @@ namespace Systems
             state.Dependency = new RemoveElementBetweenSphereJob
             {
                 ecb = ecbParallel,
-                elementBuffer = SystemAPI.GetSingletonBuffer<PullElementBuffer>(),
+                entityPull = entityPull,
                 bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveJointBetweenSphereJob
             {
                 ecb = ecbParallel,
-                jointBuffer = jointBuffer,
+                entityPull = entityPull,
                 bufferIndexForRemove = bufferIndexConnectForRemove
             }.Schedule(state.Dependency);
             state.Dependency = new RemoveIndexConnectInSphereJob
@@ -93,7 +92,9 @@ namespace Systems
             state.Dependency = new RemoveSphereJob
             {
                 merge = merge,
-                ecb = ecb
+                ecb = ecb,
+                entityPull = entityPull,
+                transforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
             }.Schedule(state.Dependency);
 
             var oldIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.to).value;
@@ -227,7 +228,7 @@ namespace Systems
         {
             public EntityCommandBuffer.ParallelWriter ecb;
             [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
-            public DynamicBuffer<PullElementBuffer> elementBuffer;
+            [ReadOnly] public Entity entityPull;
 
             public void Execute(Entity entity, [EntityIndexInQuery] int sortKey, in LocalTransform transform,
                 in IndexConnectComponent indexConnect)
@@ -236,7 +237,7 @@ namespace Systems
                 {
                     if (indexConnect.value != index.value) continue;
 
-                    StaticMethod.RemoveElement(ecb, sortKey, elementBuffer, entity, transform);
+                    StaticMethod.RemoveElement(ecb, sortKey, entityPull, entity, transform);
                 }
             }
         }
@@ -247,7 +248,7 @@ namespace Systems
         {
             public EntityCommandBuffer.ParallelWriter ecb;
             [ReadOnly] public DynamicBuffer<IndexConnectionForRemoveBuffer> bufferIndexForRemove;
-            public DynamicBuffer<PullJointBuffer> jointBuffer;
+            [ReadOnly] public Entity entityPull;
 
             public void Execute(Entity entity, [EntityIndexInQuery] int sortKey, in IndexConnectComponent indexConnect)
             {
@@ -255,7 +256,7 @@ namespace Systems
                 {
                     if (indexConnect.value != index.value) continue;
 
-                    StaticMethod.RemoveJoint(ecb, sortKey, jointBuffer, entity);
+                    StaticMethod.RemoveJoint(ecb, sortKey, entityPull, entity);
                 }
             }
         }
@@ -303,7 +304,7 @@ namespace Systems
 
                 ecb.DestroyEntity(entity);
 
-                StaticMethod.SetJoint(ecb, joints,merge.ValueRO.to, element, levelSetting.distanceBetweenElements,
+                StaticMethod.UseJoint(ecb, joints,merge.ValueRO.to, element, levelSetting.distanceBetweenElements,
                     indexConnect.value);
 
                 buffers[merge.ValueRO.to].Add(new IndexConnectionBuffer { value = indexConnect.value });
@@ -311,15 +312,19 @@ namespace Systems
         }
 
         [BurstCompile]
-        public partial struct RemoveSphereJob : IJobEntity
+        public struct RemoveSphereJob : IJob
         {
             [NativeDisableUnsafePtrRestriction] public RefRW<MergeSphereComponent> merge;
 
             public EntityCommandBuffer ecb;
+            [ReadOnly] public Entity entityPull;
+            [ReadOnly] public ComponentLookup<LocalTransform> transforms;
 
-            public void Execute(LevelSettingAspect levelSettingAspect)
+            public void Execute()
             {
-                levelSettingAspect.AddSphereInPull(ecb, merge.ValueRO.from);
+                var transform = transforms[merge.ValueRO.from];
+                transform.Position = new float3(0, -10, 0);
+                StaticMethod.RemoveSphere(ecb, entityPull, merge.ValueRO.from, transform);
             }
         }
 

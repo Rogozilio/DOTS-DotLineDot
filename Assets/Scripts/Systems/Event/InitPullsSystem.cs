@@ -2,6 +2,7 @@
 using Components.DynamicBuffers;
 using Static;
 using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -14,6 +15,7 @@ namespace Systems
         [BurstCompile]
         public void OnCreate(ref SystemState state)
         {
+            state.RequireForUpdate<PullSphereBuffer>();
             state.RequireForUpdate<LevelSettingComponent>();
             state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
         }
@@ -26,7 +28,9 @@ namespace Systems
 
             state.Dependency = new CreatePullsJob
             {
-                ecb = ecb
+                ecb = ecb,
+                entityBuffer = SystemAPI.GetSingletonEntity<PullSphereBuffer>(),
+                transforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
             }.Schedule(state.Dependency);
 
             state.Enabled = false;
@@ -36,22 +40,31 @@ namespace Systems
         public partial struct CreatePullsJob : IJobEntity
         {
             public EntityCommandBuffer ecb;
+            public Entity entityBuffer;
+            [ReadOnly] public ComponentLookup<LocalTransform> transforms;
 
             public void Execute(LevelSettingAspect levelSettingAspect)
             {
+                var transformElement = transforms[levelSettingAspect.level.prefabElement];
+                transformElement.Position = new float3(0, -15, 0);
+
                 for (var i = 0; i < levelSettingAspect.level.countSphere; i++)
                 {
-                    var newSphere = ecb.Instantiate(levelSettingAspect.level.prefabSphere);
-                    levelSettingAspect.AddSphereInPull(ecb, newSphere, i, true);//Pull sphere
+                    var transform = new LocalTransform()
+                    {
+                        Position = new float3(1 + i * 1.1f, -10, 1),
+                        Rotation = quaternion.identity,
+                        Scale = 1f
+                    };
+                    StaticMethod.InitSphere(ecb, entityBuffer, levelSettingAspect.level.prefabSphere, transform);
                 }
 
                 for (var i = 0; i < levelSettingAspect.level.countElement; i++)
                 {
-                    var newElement = ecb.Instantiate(levelSettingAspect.level.prefabElement);
-                    levelSettingAspect.AddElementInPull(ecb, newElement, true); //Pull element
+                    StaticMethod.InitElement(ecb, entityBuffer, levelSettingAspect.level.prefabElement,
+                        transformElement);
 
-                    var newJoint = StaticMethod.CreateJoint(ecb, Entity.Null, Entity.Null, 0, -1);
-                    levelSettingAspect.AddJointInPull(ecb, newJoint, true); //Pull joint
+                    StaticMethod.InitJoint(ecb, entityBuffer);
                 }
             }
         }

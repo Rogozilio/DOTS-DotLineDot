@@ -58,7 +58,7 @@ namespace Systems
 
             private void Execute(Entity entity, in ConnectSphere connectSphere, in IndexSharedComponent indexShared)
             {
-                StaticMethod.SetJoint(ecb, jointBuffer, entity, connectSphere.target,
+                StaticMethod.UseJoint(ecb, jointBuffer, entity, connectSphere.target,
                     levelSettings.distanceBetweenElements, levelSettings.indexConnection);
                 levelSettings.indexShared = (byte)indexShared.value;
                 ecb.SetComponent(entityLevelSettings, levelSettings);
