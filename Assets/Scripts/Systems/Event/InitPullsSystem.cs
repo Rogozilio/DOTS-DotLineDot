@@ -6,6 +6,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Utilities;
 
 namespace Systems
 {
@@ -46,13 +47,13 @@ namespace Systems
             public void Execute(LevelSettingAspect levelSettingAspect)
             {
                 var transformElement = transforms[levelSettingAspect.level.prefabElement];
-                transformElement.Position = new float3(0, -15, 0);
+                transformElement.Position = TransformUtility.DefaultPositionElement();
 
                 for (var i = 0; i < levelSettingAspect.level.countSphere; i++)
                 {
                     var transform = new LocalTransform()
                     {
-                        Position = new float3(1 + i * 1.1f, -10, 1),
+                        Position = TransformUtility.DefaultPositionSphere(i),
                         Rotation = quaternion.identity,
                         Scale = 1f
                     };

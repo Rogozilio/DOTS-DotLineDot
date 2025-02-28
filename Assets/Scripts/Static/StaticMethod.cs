@@ -32,6 +32,18 @@ namespace Static
             ecb.AppendToBuffer(buffer, new PullSphereBuffer { value = entity });
         }
 
+        public static Entity UseSphere(EntityCommandBuffer ecb, DynamicBuffer<PullSphereBuffer> sphereBuffers,
+            LocalTransform transform, int indexShared, int countElements, string name = "Sphere")
+        {
+            var sphere = sphereBuffers[^1].value;
+            ecb.SetName(sphere, name);
+            ecb.SetComponent(sphere, transform);
+            ecb.SetComponent(sphere, new SphereComponent { countElements = countElements });
+            ecb.SetSharedComponent(sphere, new IndexSharedComponent { value = indexShared });
+            sphereBuffers.RemoveAt(sphereBuffers.Length - 1);
+            return sphere;
+        }
+
         #endregion
 
         #region Element
@@ -97,13 +109,13 @@ namespace Static
             var bodyPair = new PhysicsConstrainedBodyPair(Entity.Null, Entity.Null, false);
             var limitedDistance =
                 PhysicsJoint.CreateLimitedDistance(float3.zero, float3.zero, new Math.FloatRange(0, 0));
-            
+
             ecb.SetName(entity, name);
             ecb.AddComponent(entity, bodyPair);
             ecb.AddComponent(entity, limitedDistance);
             ecb.AddComponent(entity, new IndexConnectComponent { value = -1 });
             ecb.AddSharedComponent(entity, new PhysicsWorldIndex());
-            
+
             ecb.AppendToBuffer(buffer, new PullJointBuffer() { value = entity });
         }
 
@@ -115,13 +127,13 @@ namespace Static
             var bodyPair = new PhysicsConstrainedBodyPair(Entity.Null, Entity.Null, false);
             var limitedDistance =
                 PhysicsJoint.CreateLimitedDistance(float3.zero, float3.zero, new Math.FloatRange(0, 0));
-            
+
             ecb.SetName(sortKey, entity, name);
             ecb.AddComponent(sortKey, entity, bodyPair);
             ecb.AddComponent(sortKey, entity, limitedDistance);
             ecb.AddComponent(sortKey, entity, new IndexConnectComponent { value = -1 });
             ecb.AddSharedComponent(sortKey, entity, new PhysicsWorldIndex());
-            
+
             ecb.AppendToBuffer(sortKey, buffer, new PullJointBuffer() { value = entity });
         }
 
@@ -153,7 +165,7 @@ namespace Static
             ecb.SetComponent(sortKey, entity, limitedDistance);
             ecb.SetComponent(sortKey, entity, new IndexConnectComponent { value = -1 });
             ecb.SetSharedComponent(sortKey, entity, new PhysicsWorldIndex());
-            
+
             ecb.AppendToBuffer(sortKey, buffer, new PullJointBuffer() { value = entity });
         }
 

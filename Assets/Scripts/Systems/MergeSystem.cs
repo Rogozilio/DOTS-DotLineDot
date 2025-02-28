@@ -12,6 +12,7 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Physics.Systems;
 using Unity.Transforms;
+using Utilities;
 
 namespace Systems
 {
@@ -94,7 +95,8 @@ namespace Systems
                 merge = merge,
                 ecb = ecb,
                 entityPull = entityPull,
-                transforms = SystemAPI.GetComponentLookup<LocalTransform>(true)
+                transforms = SystemAPI.GetComponentLookup<LocalTransform>(true),
+                lenghtBuffer = SystemAPI.GetSingletonBuffer<PullSphereBuffer>().Length
             }.Schedule(state.Dependency);
 
             var oldIndex = state.EntityManager.GetSharedComponent<IndexSharedComponent>(merge.ValueRO.to).value;
@@ -319,11 +321,12 @@ namespace Systems
             public EntityCommandBuffer ecb;
             [ReadOnly] public Entity entityPull;
             [ReadOnly] public ComponentLookup<LocalTransform> transforms;
+            [ReadOnly] public int lenghtBuffer;
 
             public void Execute()
             {
                 var transform = transforms[merge.ValueRO.from];
-                transform.Position = new float3(0, -10, 0);
+                transform.Position = TransformUtility.DefaultPositionSphere(lenghtBuffer);
                 StaticMethod.RemoveSphere(ecb, entityPull, merge.ValueRO.from, transform);
             }
         }

@@ -3,14 +3,10 @@ using Components.DynamicBuffers;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Scenes;
 using Unity.Transforms;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 using SceneUtility = Utilities.SceneUtility;
 
 namespace Systems
@@ -22,6 +18,7 @@ namespace Systems
         {
             state.RequireForUpdate<SceneBuffer>();
             state.RequireForUpdate<FinishComponent>();
+            state.RequireForUpdate<CurrentSceneComponent>();
             state.RequireForUpdate<EndFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         }
 
@@ -42,7 +39,7 @@ namespace Systems
                 localTransforms = SystemAPI.GetComponentLookup<LocalTransform>(),
                 countDisableFinishes = countDisableFinishes
             }.Schedule(state.Dependency);
-            state.Dependency = new CreateLoadAndUnloadComponentJob
+            state.Dependency = new CreateLoadLevelComponentJob
             {
                 ecb = ecb,
                 countDisableFinishes = countDisableFinishes,
@@ -90,7 +87,7 @@ namespace Systems
         }
 
         [BurstCompile]
-        public struct CreateLoadAndUnloadComponentJob : IJob
+        public struct CreateLoadLevelComponentJob : IJob
         {
             public EntityCommandBuffer ecb;
             public NativeReference<int> countDisableFinishes;

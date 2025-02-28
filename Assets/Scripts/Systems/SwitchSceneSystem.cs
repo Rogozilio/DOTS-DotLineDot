@@ -12,6 +12,7 @@ namespace Systems
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<LoadLevelComponent>();
+            state.RequireForUpdate<CurrentSceneComponent>();
             state.RequireForUpdate<EndSimulationEntityCommandBufferSystem.Singleton>();
         }
 
