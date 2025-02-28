@@ -57,6 +57,11 @@ namespace Systems
                 var sphere = 
                     StaticMethod.UseSphere(ecb, sphereBuffer, transform, spawnSphere.index, spawnSphere.countElements);
 
+                if (spawnSphere.isBlockMove)
+                {
+                    ecb.AddComponent<BlockMoveSphereTag>(sphere);
+                }
+                
                 if (spawnSphere.isAddConnectSphere)
                 {
                     ecb.SetComponentEnabled<IsMouseMove>(sphere, true);

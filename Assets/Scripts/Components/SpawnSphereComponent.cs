@@ -6,6 +6,7 @@ namespace Components
     {
         public int index;
         public int countElements;
+        public bool isBlockMove;
         public bool isAddConnectSphere;
     }
 }

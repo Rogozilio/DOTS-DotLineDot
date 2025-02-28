@@ -1,9 +1,9 @@
-﻿using System;
-using Components;
+﻿using Components;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Baker
 {
@@ -11,6 +11,7 @@ namespace Baker
     {
         [HideInInspector] public int index = -1;
         [HideInInspector] public int countElements = 20;
+        [HideInInspector] public bool blockMove;
 
         private void OnValidate()
         {
@@ -36,7 +37,8 @@ namespace Baker
                 AddComponent(entity, new SpawnSphereComponent
                 {
                     index = authoring.index,
-                    countElements = authoring.countElements
+                    countElements = authoring.countElements,
+                    isBlockMove = authoring.blockMove
                 });
             }
         }
@@ -46,10 +48,12 @@ namespace Baker
         {
             private SerializedProperty _indexProperty;
             private SerializedProperty _countElementsProperty;
+            private SerializedProperty _blockMoveMouse;
             private void OnEnable()
             {
                 _indexProperty = serializedObject.FindProperty("index");
                 _countElementsProperty = serializedObject.FindProperty("countElements");
+                _blockMoveMouse = serializedObject.FindProperty("blockMove");
             }
 
             public override void OnInspectorGUI()
@@ -59,6 +63,7 @@ namespace Baker
                 GUI.enabled = true;
                 
                 EditorGUILayout.PropertyField(_countElementsProperty);
+                EditorGUILayout.PropertyField(_blockMoveMouse);
 
                 serializedObject.ApplyModifiedProperties();
             }

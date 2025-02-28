@@ -1,16 +1,10 @@
 ﻿using Aspects;
 using Components;
-using Components.DynamicBuffers;
-using Static;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Physics;
 using Unity.Physics.Systems;
-using Unity.Transforms;
-using UnityEngine;
 
 namespace Systems
 {
@@ -47,7 +41,7 @@ namespace Systems
                 if(element.TargetGravity.target == Entity.Null) return;
                 
                 if(!isMoveMouse.IsComponentEnabled(element.TargetGravity.target)) return;
-                //Debug.Log(element.TargetGravity.distance);
+                
                 element.LinearVelocity = element.ToTargetGravity * speed;
                 element.EnableTargetGravity = false;
             }

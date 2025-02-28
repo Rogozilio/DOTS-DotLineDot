@@ -1,6 +1,7 @@
 ﻿using Components;
 using Components.DynamicBuffers;
 using Components.Shared;
+using Tags;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
@@ -28,6 +29,7 @@ namespace Static
             ecb.SetComponent(entity, transform);
             ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
             ecb.SetBuffer<IndexConnectionBuffer>(entity); //Clear buffer
+            ecb.RemoveComponent<BlockMoveSphereTag>(entity);
 
             ecb.AppendToBuffer(buffer, new PullSphereBuffer { value = entity });
         }

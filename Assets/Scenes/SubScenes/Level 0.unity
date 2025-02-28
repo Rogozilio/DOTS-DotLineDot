@@ -1512,6 +1512,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   index: 0
   countElements: 60
+  blockMove: 1
 --- !u!1001 &2484636853354527968
 PrefabInstance:
   m_ObjectHideFlags: 0

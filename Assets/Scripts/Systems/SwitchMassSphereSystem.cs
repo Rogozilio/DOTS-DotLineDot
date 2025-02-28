@@ -23,6 +23,7 @@ namespace Systems
 
     [BurstCompile]
     [WithAll(typeof(IsMouseMove))]
+    [WithOptions(EntityQueryOptions.FilterWriteGroup)]
     partial struct DynamicMassSphereJob : IJobEntity
     {
         private void Execute(ref PhysicsMass mass, in LocalTransform transform)

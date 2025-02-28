@@ -35,11 +35,12 @@ namespace Systems
         
         [BurstCompile]
         [WithAll(typeof(IsMouseMove))]
+        [WithOptions(EntityQueryOptions.FilterWriteGroup)]
         private partial struct SphereFollowMouseJob : IJobEntity
         {
             public float3 hitPoint;
             public float speed;
-            private void Execute(ref PhysicsVelocity velocity, in LocalTransform transform)
+            private void Execute(in LocalTransform transform, ref PhysicsVelocity velocity)
             {
                 speed *= 1 / transform.Scale;
                 

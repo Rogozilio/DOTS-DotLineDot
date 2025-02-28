@@ -712,6 +712,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   index: 0
   countElements: 60
+  blockMove: 1
 --- !u!4 &885582215
 Transform:
   m_ObjectHideFlags: 0
