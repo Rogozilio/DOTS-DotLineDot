@@ -51,6 +51,7 @@ namespace Baker
             AddBuffer<PullElementBuffer>(entity);
             AddBuffer<PullJointBuffer>(entity);
             AddComponent<RemoveElementComponent>(entity);
+            AddComponent<SphereForTargetGravityComponent>(entity);
         }
     }
 }

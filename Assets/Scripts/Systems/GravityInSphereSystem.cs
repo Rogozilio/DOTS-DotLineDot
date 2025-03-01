@@ -3,6 +3,7 @@ using Components;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Entities;
 using Unity.Physics.Systems;
 
@@ -20,12 +21,29 @@ namespace Systems
         public void OnUpdate(ref SystemState state)
         {
             var data = SystemAPI.GetSingleton<LevelSettingComponent>();
+            var sphereForTargetGravity = SystemAPI.GetSingletonRW<SphereForTargetGravityComponent>();
 
+            state.Dependency = new SetSphereForTargetGravityJob
+            {
+                sphereForTargetGravity = sphereForTargetGravity
+            }.Schedule(state.Dependency);
             state.Dependency = new GravityInSphereJob
             {
                 speed = data.speedGravityInSphere,
-                isMoveMouse = SystemAPI.GetComponentLookup<IsMouseMove>(true)
+                sphereForTargetGravity = sphereForTargetGravity
             }.Schedule(state.Dependency);
+        }
+
+        [BurstCompile]
+        [WithAll(typeof(IsMouseMove))]
+        public partial struct SetSphereForTargetGravityJob : IJobEntity
+        {
+            [NativeDisableUnsafePtrRestriction] public RefRW<SphereForTargetGravityComponent> sphereForTargetGravity;
+
+            public void Execute(Entity entity)
+            {
+                sphereForTargetGravity.ValueRW.sphere = entity;
+            }
         }
 
         [BurstCompile]
@@ -34,14 +52,13 @@ namespace Systems
         {
             public EntityCommandBuffer ecb;
             public float speed;
-            [ReadOnly] public ComponentLookup<IsMouseMove> isMoveMouse;
+            [NativeDisableUnsafePtrRestriction] public RefRW<SphereForTargetGravityComponent> sphereForTargetGravity;
 
             private void Execute(ElementAspect element)
             {
-                if(element.TargetGravity.target == Entity.Null) return;
-                
-                if(!isMoveMouse.IsComponentEnabled(element.TargetGravity.target)) return;
-                
+                if(sphereForTargetGravity.ValueRO.sphere == Entity.Null) return;
+                if (element.TargetGravity.target != sphereForTargetGravity.ValueRO.sphere) return;
+
                 element.LinearVelocity = element.ToTargetGravity * speed;
                 element.EnableTargetGravity = false;
             }
