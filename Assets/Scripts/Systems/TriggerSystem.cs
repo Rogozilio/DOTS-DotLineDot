@@ -51,7 +51,7 @@ namespace Systems
 
             public void Execute(Unity.Physics.TriggerEvent triggerEvent)
             {
-                CollisionSphereWithElement(triggerEvent);
+                //CollisionSphereWithElement(triggerEvent);
                 CollisionSphereWithSphere(triggerEvent);
                 CollisionSphereWithFinish(triggerEvent);
             }

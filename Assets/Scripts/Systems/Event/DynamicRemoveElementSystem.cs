@@ -14,7 +14,7 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
-    [UpdateBefore(typeof(GravityInSphereSystem))]
+    [UpdateAfter(typeof(GravityInSphereSystem))]
     public partial struct DynamicRemoveElementSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
