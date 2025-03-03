@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace Systems
 {
+    //[DisableAutoCreation]
     [UpdateInGroup(typeof(BeforePhysicsSystemGroup))]
     [UpdateBefore(typeof(MoveMouseSphereSystem))]
     public partial struct SwitchMassSphereSystem : ISystem
@@ -29,6 +30,7 @@ namespace Systems
         private void Execute(ref PhysicsMass mass, in LocalTransform transform)
         {
             mass.InverseMass = transform.Scale;
+            mass.InverseInertia = new float3(1000f, 1000f, 1000f);
         }
     }
     
@@ -36,11 +38,10 @@ namespace Systems
     [WithDisabled(typeof(IsMouseMove))]
     partial struct KinematicMassSphereJob : IJobEntity
     {
-        private void Execute(Entity e, ref PhysicsMass mass, ref PhysicsVelocity velocity, in IsMouseMove isMouseMove)
+        private void Execute(ref PhysicsMass mass)
         {
-            velocity.Linear = float3.zero;
-            velocity.Angular = float3.zero;
-            mass.InverseMass = 0;
+            mass.InverseMass = 0f;
+            mass.InverseInertia = float3.zero;
         }
     }
 }

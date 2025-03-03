@@ -2,9 +2,10 @@
 using SystemGroups;
 using Tags;
 using Unity.Burst;
-using Unity.Collections;
 using Unity.Entities;
-using UnityEngine;
+using Unity.Mathematics;
+using Unity.Physics;
+using Unity.Transforms;
 
 namespace Systems
 {
@@ -23,11 +24,12 @@ namespace Systems
             
             state.Dependency = new DropTargetHitRaycastJob
             {
-                input = input,
-                
+                input = input
             }.Schedule(state.Dependency);
+            state.Dependency = new ClearVelocityAndRotateJob().Schedule(state.Dependency);
         }
         
+        [BurstCompile]
         private partial struct DropTargetHitRaycastJob : IJobEntity
         {
             public InputDataComponent input;
@@ -36,6 +38,17 @@ namespace Systems
             {
                 if(!input.isLeftMouseUp && !input.isRightMouseUp) return;
                 mouseMove.ValueRW = false;
+            }
+        }
+
+        [BurstCompile]
+        [WithAll(typeof(SphereComponent))]
+        public partial struct ClearVelocityAndRotateJob : IJobEntity
+        {
+            public void Execute(ref PhysicsVelocity physicsVelocity)
+            {
+                physicsVelocity.Linear = float3.zero;
+                physicsVelocity.Angular = float3.zero;
             }
         }
         
