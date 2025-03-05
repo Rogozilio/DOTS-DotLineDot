@@ -14,7 +14,7 @@ using UnityEngine;
 namespace Systems
 {
     [UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
-    [UpdateAfter(typeof(GravityInSphereSystem))]
+    [UpdateBefore(typeof(GravityInSphereSystem))]
     public partial struct DynamicRemoveElementSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -125,7 +125,7 @@ namespace Systems
                     transforms[removeElement.ValueRO.element]);
                 StaticMethod.UseJoint(ecb, joints, removeElement.ValueRO.connect1, removeElement.ValueRO.connect2,
                     levelSetting.distanceBetweenElements, indexes[removeElement.ValueRO.element].value);
-                // Debug.LogWarning("Element " + removeElement.ValueRO.element +
+                // Debug.Log("Element " + removeElement.ValueRO.element +
                 //                  " joint1 " + removeElement.ValueRO.joint1 +
                 //                  " joint2 " + removeElement.ValueRO.joint2 +
                 //                  " connect1 " + removeElement.ValueRO.connect1 +
