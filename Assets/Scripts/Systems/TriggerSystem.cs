@@ -51,48 +51,8 @@ namespace Systems
 
             public void Execute(Unity.Physics.TriggerEvent triggerEvent)
             {
-                //CollisionSphereWithElement(triggerEvent);
                 CollisionSphereWithSphere(triggerEvent);
                 CollisionSphereWithFinish(triggerEvent);
-            }
-
-            private void CollisionSphereWithElement(Unity.Physics.TriggerEvent triggerEvent)
-            {
-                var sphere = Entity.Null;
-                var element = Entity.Null;
-
-                if (spheres.HasComponent(triggerEvent.EntityA))
-                    sphere = triggerEvent.EntityA;
-                if (spheres.HasComponent(triggerEvent.EntityB))
-                    sphere = triggerEvent.EntityB;
-                if (targetsGravity.HasComponent(triggerEvent.EntityA))
-                    element = triggerEvent.EntityA;
-                if (targetsGravity.HasComponent(triggerEvent.EntityB))
-                    element = triggerEvent.EntityB;
-
-                if (Entity.Null.Equals(sphere) || Entity.Null.Equals(element))
-                    return;
-
-                var isEqualsIndex = false;
-
-                for (var i = 0; i < indexesBuffer[sphere].Length; i++)
-                {
-                    if (indexesBuffer[sphere][i].value == indexesElement[element].value)
-                    {
-                        isEqualsIndex = true;
-                        break;
-                    }
-                }
-
-                if (!isEqualsIndex) return;
-
-                var newTarget = new TargetGravityComponent
-                {
-                    target = sphere, position = localToWorlds[sphere].Position,
-                    distance = math.distance(localToWorlds[sphere].Position, localToWorlds[element].Position)
-                };
-                targetsGravity[element] = newTarget;
-                targetsGravity.SetComponentEnabled(element, true);
             }
 
             private void CollisionSphereWithSphere(Unity.Physics.TriggerEvent triggerEvent)
@@ -111,7 +71,7 @@ namespace Systems
                 isCollisionWithSpheres.SetComponentEnabled(sphere1, true);
                 isCollisionWithSpheres.SetComponentEnabled(sphere2, true);
             }
-            
+
             private void CollisionSphereWithFinish(Unity.Physics.TriggerEvent triggerEvent)
             {
                 var sphere = Entity.Null;
@@ -128,10 +88,8 @@ namespace Systems
 
                 if (Entity.Null.Equals(sphere) || Entity.Null.Equals(finish))
                     return;
-                
-                var finishComponent = finishes[finish];
-                finishComponent.sphere = sphere;
-                finishes[finish] = finishComponent;
+
+                finishes[finish] = new FinishComponent { sphere = sphere };
             }
         }
     }

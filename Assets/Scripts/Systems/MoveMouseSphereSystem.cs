@@ -31,6 +31,7 @@ namespace Systems
                 hitPoint = raycastHit.position,
                 speed = levelSetting.speedMoveSphere,
             }.Schedule(state.Dependency);
+            state.Dependency = new ClearVelocitySphereJob().Schedule(state.Dependency);
         }
         
         [BurstCompile]
@@ -40,15 +41,28 @@ namespace Systems
         {
             public float3 hitPoint;
             public float speed;
-            private void Execute(in LocalTransform transform, ref PhysicsVelocity velocity)
+            private void Execute(in LocalTransform transform, ref PhysicsVelocity physicsVelocity)
             {
                 speed *= 1 / transform.Scale;
                 
-                float3 direction = hitPoint - transform.Position;
-                float distance = math.length(direction);
-                
-                velocity.Linear = math.normalizesafe(direction) * math.min(speed, speed * distance);
-                velocity.Angular = float3.zero;
+                var direction = hitPoint - transform.Position;
+                var distance = math.length(direction);
+
+                physicsVelocity.Linear = math.normalizesafe(direction) * math.min(speed, speed * distance);
+                physicsVelocity.Angular = float3.zero;
+            }
+        }
+
+        [BurstCompile]
+        [WithDisabled(typeof(IsMouseMove))]
+        [WithOptions(EntityQueryOptions.FilterWriteGroup)]
+        [WithChangeFilter(typeof(IsMouseMove))]
+        public partial struct ClearVelocitySphereJob : IJobEntity
+        {
+            public void Execute(ref PhysicsVelocity physicsVelocity)
+            {
+                physicsVelocity.Linear = float3.zero;
+                physicsVelocity.Angular = float3.zero;
             }
         }
     }

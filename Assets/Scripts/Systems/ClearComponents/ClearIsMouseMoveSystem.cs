@@ -3,9 +3,6 @@ using SystemGroups;
 using Tags;
 using Unity.Burst;
 using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Physics;
-using Unity.Transforms;
 
 namespace Systems
 {
@@ -26,7 +23,6 @@ namespace Systems
             {
                 input = input
             }.Schedule(state.Dependency);
-            state.Dependency = new ClearVelocityAndRotateJob().Schedule(state.Dependency);
         }
         
         [BurstCompile]
@@ -40,17 +36,5 @@ namespace Systems
                 mouseMove.ValueRW = false;
             }
         }
-
-        [BurstCompile]
-        [WithAll(typeof(SphereComponent))]
-        public partial struct ClearVelocityAndRotateJob : IJobEntity
-        {
-            public void Execute(ref PhysicsVelocity physicsVelocity)
-            {
-                physicsVelocity.Linear = float3.zero;
-                physicsVelocity.Angular = float3.zero;
-            }
-        }
-        
     }
 }
