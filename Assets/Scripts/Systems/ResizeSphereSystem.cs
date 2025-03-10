@@ -1,6 +1,5 @@
 ﻿using Components;
 using Components.Shared;
-using Tags;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
@@ -26,7 +25,7 @@ namespace Systems
                 .Build();
             var queryElements = SystemAPI.QueryBuilder()
                 .WithAll<IndexSharedComponent>()
-                .WithDisabled<TargetGravityComponent>()
+                .WithPresent<TargetGravityComponent>()
                 .Build();
 
             foreach (var index in indexes)
@@ -34,7 +33,7 @@ namespace Systems
                 querySphere.SetSharedComponentFilter(index);
                 queryElements.SetSharedComponentFilter(index);
 
-                var spheres = querySphere.ToComponentDataArray<SphereComponent>(Allocator.Temp);
+                var spheres = querySphere.ToComponentDataArray<SphereComponent>(Allocator.TempJob);
 
                 if (spheres.Length == 0) continue;
 
@@ -52,10 +51,10 @@ namespace Systems
                     size = math.max(0.5f, 0.5f + 0.5f * (count / limit))
                 }.Schedule(state.Dependency);
 
-                spheres.Dispose();
+                state.Dependency = spheres.Dispose(state.Dependency);
             }
 
-            indexes.Dispose();
+            state.Dependency = indexes.Dispose(state.Dependency);
         }
 
         [BurstCompile]
