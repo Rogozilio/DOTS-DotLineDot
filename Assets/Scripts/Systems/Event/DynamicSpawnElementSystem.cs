@@ -37,10 +37,19 @@ namespace Systems
                     .WithAll<IsMouseMove>()
                     .WithDisabled<IsBlockedSphere>()
                     .Build().ToEntityArray(Allocator.TempJob);
+
+            var indexesShared = new NativeArray<IndexSharedComponent>(spheresMoveMouse.Length, Allocator.TempJob);
+
+            for (var i = 0; i < spheresMoveMouse.Length; i++)
+            {
+                indexesShared[i] = state.EntityManager.GetSharedComponent<IndexSharedComponent>(spheresMoveMouse[i]);
+            }
+
             state.Dependency = new SpawnElementJob
             {
                 ecb = ecb,
                 spheres = spheresMoveMouse,
+                indexesShared = indexesShared,
                 joints = SystemAPI.GetSingletonBuffer<PullJointBuffer>(),
                 elements = SystemAPI.GetSingletonBuffer<PullElementBuffer>(),
                 entityPull = SystemAPI.GetSingletonEntity<PullElementBuffer>(),
@@ -49,6 +58,7 @@ namespace Systems
                 indexes = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
             }.Schedule(state.Dependency);
             state.Dependency = spheresMoveMouse.Dispose(state.Dependency);
+            state.Dependency = indexesShared.Dispose(state.Dependency);
         }
 
         [BurstCompile]
@@ -56,6 +66,7 @@ namespace Systems
         {
             public EntityCommandBuffer ecb;
             public NativeArray<Entity> spheres;
+            public NativeArray<IndexSharedComponent> indexesShared;
             public DynamicBuffer<PullJointBuffer> joints;
             public DynamicBuffer<PullElementBuffer> elements;
             public Entity entityPull;
@@ -65,25 +76,24 @@ namespace Systems
 
             public void Execute(Entity entity, PhysicsConstrainedBodyPair bodyPair)
             {
-                foreach (var sphere in spheres)
+                for (var i = 0; i < spheres.Length; i++)
                 {
-                    if (bodyPair.EntityA != sphere && bodyPair.EntityB != sphere) return;
+                    if (bodyPair.EntityA != spheres[i] && bodyPair.EntityB != spheres[i]) return;
 
                     var distance = math.distance(transforms[bodyPair.EntityA].Position,
                         transforms[bodyPair.EntityB].Position);
 
                     if (distance > levelSetting.distanceSpawn)
                     {
-                        var element = bodyPair.EntityA != sphere ? bodyPair.EntityA : bodyPair.EntityB;
+                        var element = bodyPair.EntityA != spheres[i] ? bodyPair.EntityA : bodyPair.EntityB;
                         StaticMethod.RemoveJoint(ecb, entityPull, entity);
-                        var transform = transforms[sphere];
+                        var transform = transforms[spheres[i]];
                         transform.Scale = transforms[levelSetting.prefabElement].Scale;
                         var newElement = StaticMethod.UseElement(ecb, elements, transform,
-                            indexes[entity].value,
-                            new IndexSharedComponent { value = levelSetting.indexShared }, "ElementNew");
+                            indexes[entity].value, indexesShared[i], "ElementNew");
                         StaticMethod.UseJoint(ecb, joints, element, newElement, levelSetting.distanceBetweenElements,
                             indexes[entity].value);
-                        StaticMethod.UseJoint(ecb, joints, newElement, sphere, levelSetting.distanceBetweenElements,
+                        StaticMethod.UseJoint(ecb, joints, newElement, spheres[i], levelSetting.distanceBetweenElements,
                             indexes[entity].value);
 
                         ecb.AddComponent(newElement, new SkipFrameComponent { count = 5 });
