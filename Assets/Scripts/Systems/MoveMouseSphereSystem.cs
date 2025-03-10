@@ -35,14 +35,15 @@ namespace Systems
         }
         
         [BurstCompile]
-        [WithAll(typeof(IsMouseMove))]
         [WithOptions(EntityQueryOptions.FilterWriteGroup)]
         private partial struct SphereFollowMouseJob : IJobEntity
         {
             public float3 hitPoint;
             public float speed;
-            private void Execute(in LocalTransform transform, ref PhysicsVelocity physicsVelocity)
+            private void Execute(in LocalTransform transform, ref PhysicsVelocity physicsVelocity, ref IsMouseMove isMouseMove)
             {
+                isMouseMove.isLastMove = true;
+                
                 speed *= 1 / transform.Scale;
                 
                 var direction = hitPoint - transform.Position;

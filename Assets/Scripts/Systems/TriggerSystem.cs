@@ -1,12 +1,8 @@
 ﻿using Components;
-using Components.DynamicBuffers;
-using Tags;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using Unity.Physics;
-using Unity.Transforms;
 using UnityEngine;
 
 namespace Systems
@@ -28,11 +24,7 @@ namespace Systems
             {
                 spheres = SystemAPI.GetComponentLookup<SphereComponent>(true),
                 finishes = SystemAPI.GetComponentLookup<FinishComponent>(),
-                targetsGravity = SystemAPI.GetComponentLookup<TargetGravityComponent>(),
-                localToWorlds = SystemAPI.GetComponentLookup<LocalToWorld>(true),
-                indexesBuffer = SystemAPI.GetBufferLookup<IndexConnectionBuffer>(true),
-                indexesElement = SystemAPI.GetComponentLookup<IndexConnectComponent>(true),
-                isCollisionWithSpheres = SystemAPI.GetComponentLookup<IsCollisionWithSphere>(),
+                merges = SystemAPI.GetComponentLookup<MergeComponent>(),
             }.Schedule(simulationSingleton, state.Dependency);
         }
 
@@ -41,13 +33,7 @@ namespace Systems
         {
             [ReadOnly] public ComponentLookup<SphereComponent> spheres;
             public ComponentLookup<FinishComponent> finishes;
-            public ComponentLookup<TargetGravityComponent> targetsGravity;
-            [ReadOnly] public ComponentLookup<LocalToWorld> localToWorlds;
-
-            [ReadOnly] public BufferLookup<IndexConnectionBuffer> indexesBuffer;
-            [ReadOnly] public ComponentLookup<IndexConnectComponent> indexesElement;
-
-            public ComponentLookup<IsCollisionWithSphere> isCollisionWithSpheres;
+            public ComponentLookup<MergeComponent> merges;
 
             public void Execute(Unity.Physics.TriggerEvent triggerEvent)
             {
@@ -68,8 +54,15 @@ namespace Systems
                 if (Entity.Null.Equals(sphere1) || Entity.Null.Equals(sphere2))
                     return;
 
-                isCollisionWithSpheres.SetComponentEnabled(sphere1, true);
-                isCollisionWithSpheres.SetComponentEnabled(sphere2, true);
+                if (!merges.IsComponentEnabled(sphere1))
+                {
+                    merges[sphere1] = new MergeComponent { target = sphere2 };
+                }
+
+                if (!merges.IsComponentEnabled(sphere2))
+                {
+                    merges[sphere2] = new MergeComponent { target = sphere1 };
+                }
             }
 
             private void CollisionSphereWithFinish(Unity.Physics.TriggerEvent triggerEvent)

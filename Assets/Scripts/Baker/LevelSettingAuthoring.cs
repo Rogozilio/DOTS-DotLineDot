@@ -50,6 +50,7 @@ namespace Baker
             AddBuffer<PullSphereBuffer>(entity);
             AddBuffer<PullElementBuffer>(entity);
             AddBuffer<PullJointBuffer>(entity);
+            AddBuffer<IndexConnectionForRemoveBuffer>(entity);
             AddComponent<RemoveElementComponent>(entity);
             AddComponent<SphereForTargetGravityComponent>(entity);
         }

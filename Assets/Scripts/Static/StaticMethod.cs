@@ -28,6 +28,8 @@ namespace Static
 
             ecb.SetComponent(entity, transform);
             ecb.SetSharedComponent(entity, new IndexSharedComponent { value = -1 });
+            ecb.SetComponent(entity, new MergeComponent());
+            ecb.SetComponentEnabled<MergeComponent>(entity, false);
             ecb.SetBuffer<IndexConnectionBuffer>(entity); //Clear buffer
             ecb.RemoveComponent<BlockMoveSphereTag>(entity);
 

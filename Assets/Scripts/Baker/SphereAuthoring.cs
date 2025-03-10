@@ -19,12 +19,12 @@ namespace Baker
                 AddComponent(entity, new SphereComponent() { countElements = authoring.countElements });
                 AddBuffer<IndexConnectionBuffer>(entity);
                 AddComponent(entity, new IsMouseMove());
+                AddComponent(entity, new MergeComponent());
                 AddComponent(entity, new IsBlockedSphere());
-                AddComponent(entity, new IsCollisionWithSphere());
 
                 SetComponentEnabled<IsMouseMove>(entity, false);
+                SetComponentEnabled<MergeComponent>(entity, false);
                 SetComponentEnabled<IsBlockedSphere>(entity, false);
-                SetComponentEnabled<IsCollisionWithSphere>(entity, false);
 
                 AddSharedComponent(entity, new IndexSharedComponent { value = -1 });
             }

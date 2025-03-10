@@ -13,7 +13,7 @@ using UnityEngine;
 
 namespace Systems
 {
-    [UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
+    [UpdateInGroup(typeof(BeforePhysicsSystemGroup))]
     public partial struct GravityInSphereSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -118,9 +118,8 @@ namespace Systems
             {
                 if (sphereForTargetGravity.ValueRO.sphere == Entity.Null) return;
                 if (element.TargetGravity.target != sphereForTargetGravity.ValueRO.sphere) return;
-                
+                //Debug.Log("Gravity");
                 element.LinearVelocity = element.ToTargetGravity * speed;
-                //element.EnableTargetGravity = false;
             }
         }
     }

@@ -137,7 +137,6 @@ GameObject:
   - component: {fileID: 280455608}
   - component: {fileID: 280455607}
   - component: {fileID: 280455606}
-  - component: {fileID: 280455605}
   m_Layer: 0
   m_Name: GlobalEntity
   m_TagString: Untagged
@@ -145,18 +144,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &280455605
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 280455604}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 664289b3f817420688d588bbbba5e529, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &280455606
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -196,7 +183,7 @@ MonoBehaviour:
   countSphere: 32
   countElement: 256
   speedMoveSphere: 25
-  speedGravityInSphere: 8
+  speedGravityInSphere: 15
   prefabSphere: {fileID: 2763660226201864276, guid: 31513fd7745a8b6468bbab060e325b0e, type: 3}
   prefabElement: {fileID: 1217494378842058816, guid: dbbc14ef6c512134191e82c86dfc2b6a, type: 3}
   distanceRemove: 0.15

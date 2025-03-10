@@ -3,10 +3,12 @@ using SystemGroups;
 using Tags;
 using Unity.Burst;
 using Unity.Entities;
+using UnityEngine;
 
 namespace Systems
 {
     [UpdateInGroup(typeof(DisableComponentsSystemGroup))]
+    [UpdateAfter(typeof(ClearMergeComponentSystem))]
     public partial struct ClearIsMouseMoveSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -18,21 +20,36 @@ namespace Systems
         public void OnUpdate(ref SystemState state)
         {
             var input = SystemAPI.GetSingleton<InputDataComponent>();
+
+            var countIsMoveMouse = SystemAPI.QueryBuilder().WithAll<IsMouseMove>().Build().CalculateEntityCount();
             
-            state.Dependency = new DropTargetHitRaycastJob
+            if(countIsMoveMouse > 0)
+                state.Dependency = new ClearIsLastMoveInIsMouseMoveSystemJob().Schedule(state.Dependency);
+
+            state.Dependency = new ClearEnableIsMouseMoveJob
             {
                 input = input
             }.Schedule(state.Dependency);
         }
-        
+
         [BurstCompile]
-        private partial struct DropTargetHitRaycastJob : IJobEntity
+        [WithDisabled(typeof(IsMouseMove))]
+        public partial struct ClearIsLastMoveInIsMouseMoveSystemJob : IJobEntity
+        {
+            public void Execute(ref IsMouseMove isMouseMove)
+            {
+                isMouseMove.isLastMove = false;
+            }
+        }
+
+        [BurstCompile]
+        private partial struct ClearEnableIsMouseMoveJob : IJobEntity
         {
             public InputDataComponent input;
-            
+
             private void Execute(EnabledRefRW<IsMouseMove> mouseMove)
             {
-                if(!input.isLeftMouseUp && !input.isRightMouseUp) return;
+                if (!input.isLeftMouseUp && !input.isRightMouseUp) return;
                 mouseMove.ValueRW = false;
             }
         }
