@@ -2,19 +2,20 @@
 using Components.DynamicBuffers;
 using Components.Shared;
 using Static;
+using Systems.ECBSystems;
 using Tags;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
+using Unity.Physics.Systems;
 using Unity.Transforms;
 using UnityEngine;
 
 namespace Systems
 {
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
-    [UpdateAfter(typeof(DuplicateSpheresSystem))]
+    [UpdateInGroup(typeof(BeforePhysicsSystemGroup), OrderFirst = true)]
     public partial struct DynamicSpawnElementSystem : ISystem
     {
         public void OnCreate(ref SystemState state)
@@ -22,13 +23,13 @@ namespace Systems
             state.RequireForUpdate<IsMouseMove>();
             state.RequireForUpdate<PullElementBuffer>();
             state.RequireForUpdate<LevelSettingComponent>();
-            state.RequireForUpdate<EndInitializationEntityCommandBufferSystem.Singleton>();
+            state.RequireForUpdate<EndBeforePhysicsEntityCommandBufferSystem.Singleton>();
         }
 
         [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecbSingleton = SystemAPI.GetSingleton<EndInitializationEntityCommandBufferSystem.Singleton>();
+            var ecbSingleton = SystemAPI.GetSingleton<EndBeforePhysicsEntityCommandBufferSystem.Singleton>();
             var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
             var spheresMoveMouse =
